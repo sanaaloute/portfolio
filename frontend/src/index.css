@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-bg text-text antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  }
+
+  ::selection {
+    @apply bg-accent/30 text-text;
+  }
+}
+
+@layer components {
+  .surface {
+    @apply bg-surface border border-border rounded-2xl;
+  }
+
+  .surface-2 {
+    @apply bg-surface-2 border border-border rounded-2xl;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white shadow-glow-sm transition hover:bg-accent/90 hover:shadow-glow focus:outline-none focus:ring-2 focus:ring-accent/50;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-border-strong bg-surface px-6 py-3 text-sm font-semibold text-text transition hover:border-text-muted hover:bg-surface-2 focus:outline-none focus:ring-2 focus:ring-accent/30;
+  }
+
+  .input {
+    @apply w-full rounded-xl border border-border bg-bg px-4 py-3 text-sm text-text placeholder:text-text-muted/60 transition focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent;
+  }
+
+  .label {
+    @apply mb-1.5 block text-xs font-medium uppercase tracking-wide text-text-muted;
+  }
+
+  .prose-content {
+    @apply prose prose-invert max-w-none prose-headings:font-display prose-a:text-accent hover:prose-a:text-accent-2;
+  }
+}
+
+/* ReactQuill dark overrides */
+.ql-toolbar {
+  @apply rounded-t-xl border-border-strong bg-surface;
+}
+
+.ql-container {
+  @apply rounded-b-xl border-border-strong bg-bg;
+}
+
+.ql-editor {
+  @apply min-h-[12rem] text-text;
+}
+
+.ql-stroke {
+  stroke: #94a3b8 !important;
+}
+
+.ql-fill {
+  fill: #94a3b8 !important;
+}
+
+.ql-picker-label {
+  @apply text-text-muted;
+}
