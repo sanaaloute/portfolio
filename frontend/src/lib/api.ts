@@ -29,10 +29,10 @@ async function request<T>(
 
   if (!response.ok) {
     if (response.status === 401 && typeof window !== 'undefined') {
+      // Mark the user as logged out via AuthContext. Redirecting to /login for
+      // protected routes is handled by <ProtectedRoute />, so visitors browsing
+      // public pages are never forced to the login page.
       window.dispatchEvent(new Event('auth:changed'));
-      if (!window.location.pathname.startsWith('/login')) {
-        window.location.href = '/login';
-      }
     }
     let message = `Request failed: ${response.status}`;
     try {
