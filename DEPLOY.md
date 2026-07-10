@@ -86,12 +86,30 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```
 
 ### Create the admin password hash (recommended)
+
+> ⚠️ **bcrypt hashes contain `$` characters.** Docker Compose interpolates `$` in `.env`
+> values, so every `$` in the hash must be **doubled** (`$$`) when stored in `.env` —
+> otherwise the hash is silently corrupted and login returns **500**. The commands below
+> handle this automatically.
+
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm backend \
-  python -m app.security 'YourStrongPassword'
-# paste the printed hash into .env as ADMIN_PASSWORD_HASH, clear ADMIN_PASSWORD, then:
+# 1) Generate the hash (raw, single '$')
+HASH=$(docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm -T backend \
+  python -m app.security 'YourStrongPassword' | tr -d '\r\n')
+
+# 2) Write it into .env with every '$' doubled, and clear the plaintext password
+sed -i "s|^ADMIN_PASSWORD=.*|ADMIN_PASSWORD=|" .env
+if grep -q '^ADMIN_PASSWORD_HASH=' .env; then
+  sed -i "s|^ADMIN_PASSWORD_HASH=.*|ADMIN_PASSWORD_HASH=${HASH//\$/\$\$}|" .env
+else
+  printf 'ADMIN_PASSWORD_HASH=%s\n' "${HASH//\$/\$\$}" >> .env
+fi
+
+# 3) Recreate the backend so it loads the hash
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d backend
 ```
+> On macOS, use `sed -i ''` instead of `sed -i`.
+> The result in `.env` looks like: `ADMIN_PASSWORD_HASH=$$2b$$12$$…` (note the doubled `$`).
 
 ## 6. Verify
 
