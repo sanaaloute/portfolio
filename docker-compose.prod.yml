@@ -1,0 +1,36 @@
+# Production override: puts the Caddy reverse proxy (automatic HTTPS via Let's Encrypt)
+# in front of the nginx `web` service. Use together with the base file:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# Requirements on the host:
+#   - DNS A record for the domain (see Caddyfile) pointing to the EC2 public IP
+#   - Security Group inbound: TCP 80 and 443 (0.0.0.0/0). Do NOT open 5432 or 8000.
+#   - A real .env in the project root (see .env.production.example) with
+#     COOKIE_SECURE=true and CORS_ORIGINS=https://aloutesana.ai-web-builder.com
+
+services:
+  # `image` lets the instance PULL prebuilt images (e.g. from ECR) instead of building
+  # locally — recommended for a 1 GB instance. Defaults build locally via the base file.
+  backend:
+    image: ${BACKEND_IMAGE:-portfolio-backend:local}
+
+  web:
+    image: ${FRONTEND_IMAGE:-portfolio-web:local}
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+
+volumes:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,74 @@
+name: Build and push images to ECR
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - "frontend/**"
+      - "docker-compose*.yml"
+      - ".github/workflows/build-and-push.yml"
+  workflow_dispatch:
+
+# Build & push only — deploying to EC2 is a separate `docker compose pull && up -d`
+# on the instance (see DEPLOY.md). This keeps the box from ever building (1 GB friendly).
+
+permissions:
+  id-token: write   # required for OIDC auth to AWS
+  contents: read
+
+concurrency:
+  group: ecr-build-push
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  ECR_REGISTRY: ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com
+
+jobs:
+  build-and-push:
+    name: Build backend & web, push to ECR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build & push backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ env.ECR_REGISTRY }}/portfolio-backend:latest
+            ${{ env.ECR_REGISTRY }}/portfolio-backend:${{ github.sha }}
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+
+      - name: Build & push web
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: true
+          tags: |
+            ${{ env.ECR_REGISTRY }}/portfolio-web:latest
+            ${{ env.ECR_REGISTRY }}/portfolio-web:${{ github.sha }}
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+
+      - name: Image digests
+        run: |
+          echo "backend: ${{ env.ECR_REGISTRY }}/portfolio-backend:${{ github.sha }}"
+          echo "web:     ${{ env.ECR_REGISTRY }}/portfolio-web:${{ github.sha }}"

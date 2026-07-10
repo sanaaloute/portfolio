@@ -1,0 +1,21 @@
+# Caddy reverse proxy with automatic HTTPS (Let's Encrypt).
+# DNS A record for this host must point to the EC2 public IP, and TCP 80/443 must be
+# open in the Security Group for the ACME HTTP-01 challenge and TLS to work.
+
+aloutesana.ai-web-builder.com {
+    reverse_proxy web:80
+
+    # Security headers
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        -Server
+    }
+
+    # Access logs
+    log {
+        output stdout
+    }
+}

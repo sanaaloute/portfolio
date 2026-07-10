@@ -7,9 +7,8 @@ A fresh, premium, minimal personal portfolio for **Aloute Sana**, rebuilt with a
 - **Attractive, data-driven hero** — name, headline, tagline, avatar, stats, and focus areas are all editable from the admin.
 - **Projects & Experience CRUD** — add, edit, delete projects and work experience through a protected admin UI.
 - **Blog + Skills** — publish articles and manage skill categories from the admin.
-- **AI assistant** — a lightweight `/chat` endpoint that answers questions based on your real profile, projects, experience, and blogs.
-- **JWT-protected admin** — single-password login with token-based access to all write routes.
-- **Docker Compose** — production-like stack (Postgres + FastAPI + nginx) plus a dev override with hot reload.
+- **Cookie-protected admin** — single-password login (httpOnly, SameSite cookie) gating all write routes; public pages stay open to visitors.
+- **Docker Compose** — production stack (Postgres + FastAPI + nginx + Caddy for TLS) plus a dev override with hot reload.
 
 ## Tech stack
 
@@ -18,22 +17,23 @@ A fresh, premium, minimal personal portfolio for **Aloute Sana**, rebuilt with a
 | Backend | FastAPI, async SQLAlchemy 2.x, asyncpg, Alembic, Pydantic v2, JWT |
 | Frontend | React 18, TypeScript, Vite, Tailwind CSS, Framer Motion, react-quill |
 | Database | PostgreSQL 16 |
-| Deployment | Docker Compose + nginx |
+| Deployment | Docker Compose + nginx + Caddy (Let's Encrypt) |
 
 ## Quick start
 
 ```bash
 # 1. Copy and fill environment variables
 cp .env.example .env
-# Edit .env — set JWT_SECRET and ADMIN_PASSWORD
+# Edit .env — set JWT_SECRET (>= 32 chars) and ADMIN_PASSWORD
 
-# 2. Start everything
-docker compose up --build -d
+# 2. Start the dev stack (hot reload)
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 
-# 3. Open http://localhost:8080
+# 3. Open http://localhost:5173
 ```
 
-The first boot will run Alembic migrations and seed the database with your existing profile, experience, and skills.
+The first boot runs Alembic migrations and seeds the database (profile, experience, skills).
+For **production on AWS EC2** (domain + automatic HTTPS via Caddy), see **[DEPLOY.md](./DEPLOY.md)**.
 
 ## Development
 
@@ -43,11 +43,11 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 
 - Frontend dev server: http://localhost:5173
 - Backend API: http://localhost:8000
-- PostgreSQL: localhost:5432
+- PostgreSQL: localhost:5433 (host) / `db:5432` (in-compose)
 
 ## Managing content
 
-1. Go to **/login** and enter your `ADMIN_PASSWORD`.
+1. Go to **/admin** (you'll be redirected to **/login**) and enter your `ADMIN_PASSWORD`.
 2. Use the **Admin** panel to edit:
    - **Profile** — hero copy, avatar, contact links, stats, focus areas
    - **Projects** — add new projects with rich-text bodies and cover images
@@ -64,8 +64,9 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 | `JWT_SECRET` | Secret for signing admin JWTs |
 | `ADMIN_PASSWORD` | Plaintext admin password (dev convenience) |
 | `ADMIN_PASSWORD_HASH` | Bcrypt hash of admin password (recommended for production) |
-| `CORS_ORIGINS` | Comma-separated allowed origins |
-| `OPENAI_API_KEY` | Optional — polishes chat responses |
+| `CORS_ORIGINS` | Comma-separated allowed origins (set to your domain in prod) |
+| `COOKIE_SECURE` | `true` behind HTTPS, `false` for plain HTTP |
+| `BACKEND_IMAGE` / `FRONTEND_IMAGE` | Optional ECR image URIs to pull instead of building (prod) |
 
 Generate a password hash:
 
