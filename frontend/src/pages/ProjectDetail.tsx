@@ -1,6 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Calendar, MapPin } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { PageWrapper } from '../components/PageWrapper';
 import { LoadingState, ErrorState } from '../components/LoadingState';
 import { SafeHtml } from '../components/SafeHtml';
@@ -8,20 +9,21 @@ import { useApi } from '../hooks/useApi';
 import { projectsApi } from '../lib/api';
 
 export function ProjectDetail() {
+  const { t } = useTranslation();
   const { slug } = useParams<{ slug: string }>();
   const { data: project, loading, error, refetch } = useApi(
     () => projectsApi.get(slug!),
     [slug]
   );
 
-  if (loading) return <LoadingState message="Loading project..." />;
-  if (error || !project) return <ErrorState message={error || 'Project not found'} retry={refetch} />;
+  if (loading) return <LoadingState message={t('projectDetail.loading')} />;
+  if (error || !project) return <ErrorState message={error || t('projectDetail.notFound')} retry={refetch} />;
 
   return (
     <PageWrapper>
       <div className="mx-auto max-w-4xl px-6 pt-32 pb-24">
         <Link to="/projects" className="mb-6 inline-flex items-center gap-2 text-sm text-text-muted hover:text-text">
-          <ArrowLeft size={16} /> Back to projects
+          <ArrowLeft size={16} /> {t('projectDetail.back')}
         </Link>
 
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>

@@ -24,7 +24,7 @@ export function BlogManager() {
   const load = async () => {
     setLoading(true);
     try {
-      setBlogs(await blogsApi.list());
+      setBlogs(await blogsApi.listAll());
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load blog posts');

@@ -78,16 +78,6 @@ export interface LoginCredentials {
   password: string;
 }
 
-export interface TokenResponse {
-  access_token: string;
-  token_type: string;
-}
-
-export interface ChatQuery {
-  query: string;
-}
-
-export interface ChatResponse {
-  answer: string;
-  confidence: number;
+export interface MeResponse {
+  sub: string;
 }

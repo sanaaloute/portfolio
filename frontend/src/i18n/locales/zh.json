@@ -1,0 +1,93 @@
+{
+  "nav": {
+    "home": "首页",
+    "projects": "项目",
+    "experience": "经历",
+    "blog": "博客",
+    "contact": "联系",
+    "admin": "管理",
+    "downloadCv": "下载简历",
+    "logout": "退出登录",
+    "toggleMenu": "切换菜单"
+  },
+  "hero": {
+    "viewProjects": "查看项目",
+    "letsTalk": "联系我",
+    "resume": "简历"
+  },
+  "footer": {
+    "rights": "© {{year}} {{name}}。保留所有权利。",
+    "github": "GitHub",
+    "linkedin": "LinkedIn",
+    "email": "邮箱"
+  },
+  "common": {
+    "loading": "加载中...",
+    "tryAgain": "重试",
+    "viewAll": "查看全部",
+    "present": "至今"
+  },
+  "home": {
+    "failedProfile": "加载个人资料失败",
+    "focusAreas": "专注领域",
+    "featuredProjects": "精选项目",
+    "experience": "工作经历",
+    "skills": "技能与技术",
+    "blog": "博客",
+    "ctaTitle": "一起打造出色的作品。",
+    "ctaSubtitle": "欢迎 AI/ML 与全栈工程方面的合作、咨询及全职机会。",
+    "getInTouch": "联系我",
+    "seeMyWork": "查看作品"
+  },
+  "projects": {
+    "title": "项目",
+    "loading": "正在加载项目...",
+    "empty": "暂无项目，敬请期待。"
+  },
+  "projectDetail": {
+    "loading": "正在加载项目...",
+    "notFound": "未找到项目",
+    "back": "返回项目列表"
+  },
+  "experience": {
+    "title": "工作经历",
+    "loading": "正在加载经历..."
+  },
+  "contact": {
+    "title": "联系我",
+    "location": "所在地",
+    "sendMessage": "发送消息",
+    "name": "您的姓名",
+    "email": "您的邮箱",
+    "message": "您的留言",
+    "openEmail": "打开邮件客户端",
+    "emailLabel": "邮箱",
+    "githubLabel": "GitHub",
+    "linkedinLabel": "LinkedIn",
+    "failedProfile": "加载个人资料失败"
+  },
+  "blog": {
+    "title": "博客",
+    "readMore": "阅读",
+    "back": "返回博客",
+    "empty": "暂无文章。"
+  },
+  "notFound": {
+    "title": "页面未找到",
+    "subtitle": "您访问的页面不存在。",
+    "goHome": "返回首页"
+  },
+  "login": {
+    "title": "管理员登录",
+    "subtitle": "请输入管理员密码以管理内容。",
+    "password": "密码",
+    "submit": "登录",
+    "submitting": "登录中..."
+  },
+  "language": {
+    "label": "语言",
+    "en": "English",
+    "fr": "Français",
+    "zh": "中文 (简体)"
+  }
+}

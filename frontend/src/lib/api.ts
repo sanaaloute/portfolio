@@ -1,21 +1,15 @@
 import type {
   Blog,
-  ChatQuery,
-  ChatResponse,
   Experience,
   LoginCredentials,
   Profile,
   Project,
   SkillGroup,
-  TokenResponse,
+  MeResponse,
   UploadedImage,
 } from './types';
 
 const API_BASE = (import.meta.env.VITE_API_BASE as string | undefined) || '';
-
-function getToken(): string | null {
-  return localStorage.getItem('portfolio_token');
-}
 
 async function request<T>(
   path: string,
@@ -25,20 +19,21 @@ async function request<T>(
   const headers = new Headers(options.headers);
   headers.set('Accept', 'application/json');
 
-  const token = getToken();
-  if (token) {
-    headers.set('Authorization', `Bearer ${token}`);
-  }
-
   if (options.body && !(options.body instanceof FormData)) {
     if (!headers.has('Content-Type')) {
       headers.set('Content-Type', 'application/json');
     }
   }
 
-  const response = await fetch(url, { ...options, headers });
+  const response = await fetch(url, { ...options, headers, credentials: 'same-origin' });
 
   if (!response.ok) {
+    if (response.status === 401 && typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('auth:changed'));
+      if (!window.location.pathname.startsWith('/login')) {
+        window.location.href = '/login';
+      }
+    }
     let message = `Request failed: ${response.status}`;
     try {
       const data = await response.json();
@@ -56,17 +51,20 @@ async function request<T>(
   try {
     return (await response.json()) as T;
   } catch {
-    return undefined as unknown as T;
+    throw new Error('Invalid server response');
   }
 }
 
 // Auth
 export const authApi = {
   login: (payload: LoginCredentials) =>
-    request<TokenResponse>('/api/auth/login', {
+    request<{ ok: boolean }>('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
+  me: () => request<MeResponse>('/api/auth/me'),
+  logout: () =>
+    request<{ ok: boolean }>('/api/auth/logout', { method: 'POST' }),
 };
 
 // Profile
@@ -116,6 +114,7 @@ export const skillsApi = {
 // Blogs
 export const blogsApi = {
   list: () => request<Blog[]>('/api/blogs'),
+  listAll: () => request<Blog[]>('/api/blogs/all'),
   get: (slug: string) => request<Blog>(`/api/blogs/${slug}`),
   create: (payload: Partial<Blog>) =>
     request<Blog>('/api/blogs', { method: 'POST', body: JSON.stringify(payload) }),
@@ -134,16 +133,15 @@ export const uploadApi = {
       body: formData,
     });
   },
+  uploadResume: (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return request<UploadedImage>('/api/upload/resume', {
+      method: 'POST',
+      body: formData,
+    });
+  },
   list: () => request<UploadedImage[]>('/api/upload/images'),
   delete: (filename: string) =>
     request<void>(`/api/upload/images/${filename}`, { method: 'DELETE' }),
-};
-
-// Chat
-export const chatApi = {
-  query: (query: string) =>
-    request<ChatResponse>('/api/chat/query', {
-      method: 'POST',
-      body: JSON.stringify({ query } as ChatQuery),
-    }),
 };

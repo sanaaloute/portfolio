@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { profileApi } from '../../lib/api';
+import { Upload } from 'lucide-react';
+import { profileApi, uploadApi } from '../../lib/api';
 import type { Profile } from '../../lib/types';
 import { LoadingState, ErrorState } from '../../components/LoadingState';
 import { RichTextEditor } from '../../components/RichTextEditor';
@@ -10,6 +11,8 @@ export function ProfileEditor() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [resumeUrl, setResumeUrl] = useState('');
+  const [cvUploading, setCvUploading] = useState(false);
 
   const [statsJson, setStatsJson] = useState('[]');
   const [focusJson, setFocusJson] = useState('[]');
@@ -20,6 +23,7 @@ export function ProfileEditor() {
       .get()
       .then((p) => {
         setProfile(p);
+        setResumeUrl(p.resume_url || '');
         setStatsJson(JSON.stringify(p.hero_stats, null, 2));
         setFocusJson(JSON.stringify(p.focus_areas, null, 2));
         setSocialsJson(JSON.stringify(p.socials || [], null, 2));
@@ -27,6 +31,22 @@ export function ProfileEditor() {
       .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load profile'))
       .finally(() => setLoading(false));
   }, []);
+
+  const handleCvUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCvUploading(true);
+    setError(null);
+    try {
+      const res = await uploadApi.uploadResume(file);
+      setResumeUrl(res.url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setCvUploading(false);
+      e.target.value = '';
+    }
+  };
 
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -95,8 +115,32 @@ export function ProfileEditor() {
             <input name="avatar_url" defaultValue={profile.avatar_url || ''} className="input" />
           </div>
           <div>
-            <label className="label">Resume URL</label>
-            <input name="resume_url" defaultValue={profile.resume_url || ''} className="input" />
+            <label className="label">Resume (CV)</label>
+            <input
+              name="resume_url"
+              value={resumeUrl}
+              onChange={(e) => setResumeUrl(e.target.value)}
+              placeholder="https://... or upload a file"
+              className="input"
+            />
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              <label className="btn-secondary cursor-pointer py-2 text-xs">
+                <Upload size={14} />
+                {cvUploading ? 'Uploading...' : 'Upload CV'}
+                <input
+                  type="file"
+                  accept=".pdf,.doc,.docx,application/pdf"
+                  className="hidden"
+                  onChange={handleCvUpload}
+                  disabled={cvUploading}
+                />
+              </label>
+              {resumeUrl && (
+                <a href={resumeUrl} target="_blank" rel="noreferrer" className="text-xs text-accent hover:underline">
+                  View current CV
+                </a>
+              )}
+            </div>
           </div>
           <div>
             <label className="label">Location</label>

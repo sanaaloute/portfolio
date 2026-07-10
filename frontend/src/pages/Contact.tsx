@@ -1,4 +1,5 @@
 import { Mail, MapPin, Github, Linkedin, ArrowUpRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { PageWrapper } from '../components/PageWrapper';
 import { SectionHeading } from '../components/SectionHeading';
 import { useApi } from '../hooks/useApi';
@@ -7,22 +8,22 @@ import { LoadingState, ErrorState } from '../components/LoadingState';
 
 export function Contact() {
   const { data: profile, loading, error } = useApi(profileApi.get);
+  const { t } = useTranslation();
 
-  if (loading) return <LoadingState message="Loading..." />;
-  if (error || !profile) return <ErrorState message={error || 'Failed to load profile'} />;
+  if (loading) return <LoadingState />;
+  if (error || !profile) return <ErrorState message={error || t('contact.failedProfile')} />;
 
   const links = [
-    { icon: Mail, label: 'Email', value: profile.email, href: `mailto:${profile.email}` },
-    { icon: Github, label: 'GitHub', value: profile.github?.replace('https://', ''), href: profile.github },
-    { icon: Linkedin, label: 'LinkedIn', value: profile.linkedin?.replace('https://', ''), href: profile.linkedin },
+    { icon: Mail, label: t('contact.emailLabel'), value: profile.email, href: `mailto:${profile.email}` },
+    { icon: Github, label: t('contact.githubLabel'), value: profile.github?.replace('https://', ''), href: profile.github },
+    { icon: Linkedin, label: t('contact.linkedinLabel'), value: profile.linkedin?.replace('https://', ''), href: profile.linkedin },
   ].filter((l) => l.value);
 
   return (
     <PageWrapper>
       <div className="mx-auto max-w-4xl px-6 pt-32 pb-24">
         <SectionHeading
-          title="Get in Touch"
-          subtitle="Have a project, opportunity, or just want to say hi? I'd love to hear from you."
+          title={t('contact.title')}
           align="center"
         />
 
@@ -54,7 +55,7 @@ export function Contact() {
                 <MapPin size={18} />
               </div>
               <div>
-                <p className="text-sm text-text-muted">Location</p>
+                <p className="text-sm text-text-muted">{t('contact.location')}</p>
                 <p className="font-medium text-text">{profile.location}</p>
               </div>
             </div>
@@ -62,7 +63,7 @@ export function Contact() {
         </div>
 
         <div className="mt-10 surface p-6 md:p-8">
-          <h3 className="font-display text-lg font-semibold text-text">Send a message</h3>
+          <h3 className="font-display text-lg font-semibold text-text">{t('contact.sendMessage')}</h3>
           <form
             action={`mailto:${profile.email}`}
             method="post"
@@ -70,12 +71,12 @@ export function Contact() {
             className="mt-5 space-y-4"
           >
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <input name="name" placeholder="Your name" className="input" required />
-              <input name="email" type="email" placeholder="Your email" className="input" required />
+              <input name="name" placeholder={t('contact.name')} className="input" required />
+              <input name="email" type="email" placeholder={t('contact.email')} className="input" required />
             </div>
-            <textarea name="message" placeholder="Your message" rows={5} className="input" required />
+            <textarea name="message" placeholder={t('contact.message')} rows={5} className="input" required />
             <button type="submit" className="btn-primary">
-              <Mail size={16} /> Open email client
+              <Mail size={16} /> {t('contact.openEmail')}
             </button>
           </form>
         </div>

@@ -19,11 +19,11 @@ services:
       dockerfile: Dockerfile
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-portfolio}
-      JWT_SECRET: ${JWT_SECRET}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required (min 32 chars, not the example placeholder)}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       ADMIN_PASSWORD_HASH: ${ADMIN_PASSWORD_HASH:-}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
     volumes:
       - uploads:/app/uploads
     depends_on:

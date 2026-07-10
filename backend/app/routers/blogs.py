@@ -20,9 +20,18 @@ async def list_blogs(db: AsyncSession = Depends(get_db)):
     return result.scalars().all()
 
 
+@router.get("/all", response_model=list[BlogResponse])
+async def list_all_blogs(
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    result = await db.execute(select(Blog).order_by(Blog.created_at.desc()))
+    return result.scalars().all()
+
+
 @router.get("/{slug}", response_model=BlogResponse)
 async def get_blog(slug: str, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Blog).where(Blog.slug == slug))
+    result = await db.execute(select(Blog).where(Blog.slug == slug, Blog.published == True))
     blog = result.scalar_one_or_none()
     if not blog:
         raise HTTPException(status_code=404, detail="Blog not found")

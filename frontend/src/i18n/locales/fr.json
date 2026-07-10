@@ -1,0 +1,93 @@
+{
+  "nav": {
+    "home": "Accueil",
+    "projects": "Projets",
+    "experience": "Expérience",
+    "blog": "Blog",
+    "contact": "Contact",
+    "admin": "Admin",
+    "downloadCv": "Télécharger le CV",
+    "logout": "Se déconnecter",
+    "toggleMenu": "Basculer le menu"
+  },
+  "hero": {
+    "viewProjects": "Voir les projets",
+    "letsTalk": "Discutons",
+    "resume": "CV"
+  },
+  "footer": {
+    "rights": "© {{year}} {{name}}. Tous droits réservés.",
+    "github": "GitHub",
+    "linkedin": "LinkedIn",
+    "email": "E-mail"
+  },
+  "common": {
+    "loading": "Chargement...",
+    "tryAgain": "Réessayer",
+    "viewAll": "Voir tout",
+    "present": "Présent"
+  },
+  "home": {
+    "failedProfile": "Échec du chargement du profil",
+    "focusAreas": "Domaines d'expertise",
+    "featuredProjects": "Projets mis en avant",
+    "experience": "Expérience",
+    "skills": "Compétences & Technologies",
+    "blog": "Blog",
+    "ctaTitle": "Construisons quelque chose de grand.",
+    "ctaSubtitle": "Ouvert aux collaborations, au conseil et aux opportunités à temps plein en IA/ML et en ingénierie full-stack.",
+    "getInTouch": "Me contacter",
+    "seeMyWork": "Voir mes réalisations"
+  },
+  "projects": {
+    "title": "Projets",
+    "loading": "Chargement des projets...",
+    "empty": "Aucun projet pour le moment. Revenez bientôt."
+  },
+  "projectDetail": {
+    "loading": "Chargement du projet...",
+    "notFound": "Projet introuvable",
+    "back": "Retour aux projets"
+  },
+  "experience": {
+    "title": "Expérience",
+    "loading": "Chargement de l'expérience..."
+  },
+  "contact": {
+    "title": "Me contacter",
+    "location": "Localisation",
+    "sendMessage": "Envoyer un message",
+    "name": "Votre nom",
+    "email": "Votre e-mail",
+    "message": "Votre message",
+    "openEmail": "Ouvrir le client e-mail",
+    "emailLabel": "E-mail",
+    "githubLabel": "GitHub",
+    "linkedinLabel": "LinkedIn",
+    "failedProfile": "Échec du chargement du profil"
+  },
+  "blog": {
+    "title": "Blog",
+    "readMore": "Lire",
+    "back": "Retour au blog",
+    "empty": "Aucun article pour le moment."
+  },
+  "notFound": {
+    "title": "Page introuvable",
+    "subtitle": "La page que vous recherchez n'existe pas.",
+    "goHome": "Retour à l'accueil"
+  },
+  "login": {
+    "title": "Connexion admin",
+    "subtitle": "Saisissez le mot de passe administrateur pour gérer le contenu.",
+    "password": "Mot de passe",
+    "submit": "Se connecter",
+    "submitting": "Connexion..."
+  },
+  "language": {
+    "label": "Langue",
+    "en": "English",
+    "fr": "Français",
+    "zh": "中文 (简体)"
+  }
+}

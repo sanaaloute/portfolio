@@ -1,45 +1,66 @@
-import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Calendar } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { PageWrapper } from '../components/PageWrapper';
-import { LoadingState, ErrorState } from '../components/LoadingState';
-import { SafeHtml } from '../components/SafeHtml';
-import { useApi } from '../hooks/useApi';
-import { blogsApi } from '../lib/api';
+import { Link, useParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+import { blogsApi } from '../lib/api'
+import { useApi } from '../hooks/useApi'
+import { LoadingState } from '../components/LoadingState'
+import { SafeHtml } from '../components/SafeHtml'
 
 export function BlogDetail() {
-  const { slug } = useParams<{ slug: string }>();
-  const { data: blog, loading, error, refetch } = useApi(() => blogsApi.get(slug!), [slug]);
+  const { t, i18n } = useTranslation()
+  const { slug = '' } = useParams<{ slug: string }>()
+  const { data: post, loading } = useApi(() => blogsApi.get(slug), [slug])
 
-  if (loading) return <LoadingState message="Loading article..." />;
-  if (error || !blog) return <ErrorState message={error || 'Article not found'} retry={refetch} />;
+  if (loading) {
+    return <LoadingState />
+  }
+
+  if (!post) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-16 text-center">
+        <p className="text-text-muted">{t('blog.empty')}</p>
+        <Link to="/blog" className="mt-4 inline-block text-accent hover:underline">
+          &larr; {t('blog.back')}
+        </Link>
+      </div>
+    )
+  }
+
+  const date = post.published_at || post.created_at
+  const formattedDate = date
+    ? new Date(date).toLocaleDateString(i18n.language, {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
+    : null
 
   return (
-    <PageWrapper>
-      <div className="mx-auto max-w-3xl px-6 pt-32 pb-24">
-        <Link to="/blog" className="mb-6 inline-flex items-center gap-2 text-sm text-text-muted hover:text-text">
-          <ArrowLeft size={16} /> Back to blog
-        </Link>
+    <article className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
+      <Link to="/blog" className="text-sm text-accent hover:underline">
+        &larr; {t('blog.back')}
+      </Link>
 
-        <motion.article initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-          <div className="flex items-center gap-2 text-sm text-text-muted">
-            <Calendar size={14} />
-            <span>{blog.published_at ? new Date(blog.published_at).toLocaleDateString() : 'Draft'}</span>
-          </div>
-          <h1 className="mt-3 font-display text-3xl font-bold text-text md:text-5xl">{blog.title}</h1>
-          {blog.summary && <p className="mt-4 text-lg text-text-muted">{blog.summary}</p>}
+      <h1 className="mt-6 text-3xl font-bold tracking-tight text-text sm:text-4xl">
+        {post.title}
+      </h1>
 
-          {blog.cover_url && (
-            <div className="mt-8 overflow-hidden rounded-3xl">
-              <img src={blog.cover_url} alt={blog.title} className="w-full object-cover" />
-            </div>
-          )}
+      {formattedDate && (
+        <time dateTime={date} className="mt-2 block text-sm text-text-muted">
+          {formattedDate}
+        </time>
+      )}
 
-          <div className="mt-8">
-            <SafeHtml html={blog.body} className="prose-content" />
-          </div>
-        </motion.article>
+      {post.cover_url && (
+        <img
+          src={post.cover_url}
+          alt={post.title}
+          className="mt-8 w-full rounded-xl object-cover"
+        />
+      )}
+
+      <div className="mt-8">
+        <SafeHtml html={post.body} className="prose prose-invert max-w-none" />
       </div>
-    </PageWrapper>
-  );
+    </article>
+  )
 }

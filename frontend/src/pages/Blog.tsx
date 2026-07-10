@@ -1,30 +1,50 @@
-import { PageWrapper } from '../components/PageWrapper';
-import { SectionHeading } from '../components/SectionHeading';
-import { BlogCard } from '../components/BlogCard';
-import { LoadingState, ErrorState } from '../components/LoadingState';
-import { useApi } from '../hooks/useApi';
-import { blogsApi } from '../lib/api';
+import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+import { blogsApi } from '../lib/api'
+import { useApi } from '../hooks/useApi'
+import { SectionHeading } from '../components/SectionHeading'
+import { LoadingState } from '../components/LoadingState'
 
-export function BlogPage() {
-  const { data: blogs, loading, error, refetch } = useApi(blogsApi.list);
+export function Blog() {
+  const { t } = useTranslation()
+  const { data: blogs, loading } = useApi(() => blogsApi.list())
 
   return (
-    <PageWrapper>
-      <div className="mx-auto max-w-6xl px-6 pt-32 pb-24">
-        <SectionHeading title="Blog" subtitle="Thoughts on AI, engineering, and building products." align="center" />
-        {loading && <LoadingState message="Loading articles..." />}
-        {error && <ErrorState message={error} retry={refetch} />}
-        {!loading && !error && (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {blogs?.map((blog, i) => (
-              <BlogCard key={blog.id} blog={blog} index={i} />
-            ))}
-          </div>
-        )}
-        {!loading && !error && blogs?.length === 0 && (
-          <p className="py-12 text-center text-text-muted">No articles published yet.</p>
-        )}
-      </div>
-    </PageWrapper>
-  );
+    <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16">
+      <SectionHeading title={t('blog.title')} />
+
+      {loading ? (
+        <LoadingState />
+      ) : !blogs?.length ? (
+        <p className="py-16 text-center text-text-muted">{t('blog.empty')}</p>
+      ) : (
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {blogs.map((post) => (
+            <Link key={post.id} to={`/blog/${post.slug}`} className="block h-full">
+              <div className="surface flex h-full flex-col overflow-hidden">
+                {post.cover_url && (
+                  <img
+                    src={post.cover_url}
+                    alt={post.title}
+                    className="h-48 w-full object-cover"
+                  />
+                )}
+                <div className="flex flex-1 flex-col p-6">
+                  <h3 className="text-lg font-semibold text-text">{post.title}</h3>
+                  {post.summary && (
+                    <p className="mt-2 flex-1 text-sm leading-relaxed text-text-muted">
+                      {post.summary}
+                    </p>
+                  )}
+                  <span className="mt-4 text-sm font-medium text-accent">
+                    {t('blog.readMore')} &rarr;
+                  </span>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }

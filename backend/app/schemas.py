@@ -188,17 +188,3 @@ class SkillGroup(BaseModel):
 
 class LoginRequest(BaseModel):
     password: str
-
-
-class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-
-
-class ChatQuery(BaseModel):
-    query: str
-
-
-class ChatResponse(BaseModel):
-    answer: str
-    confidence: float

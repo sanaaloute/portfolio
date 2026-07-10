@@ -1,0 +1,93 @@
+{
+  "nav": {
+    "home": "Home",
+    "projects": "Projects",
+    "experience": "Experience",
+    "blog": "Blog",
+    "contact": "Contact",
+    "admin": "Admin",
+    "downloadCv": "Download CV",
+    "logout": "Log out",
+    "toggleMenu": "Toggle menu"
+  },
+  "hero": {
+    "viewProjects": "View Projects",
+    "letsTalk": "Let's Talk",
+    "resume": "Resume"
+  },
+  "footer": {
+    "rights": "© {{year}} {{name}}. All rights reserved.",
+    "github": "GitHub",
+    "linkedin": "LinkedIn",
+    "email": "Email"
+  },
+  "common": {
+    "loading": "Loading...",
+    "tryAgain": "Try again",
+    "viewAll": "View all",
+    "present": "Present"
+  },
+  "home": {
+    "failedProfile": "Failed to load profile",
+    "focusAreas": "Focus Areas",
+    "featuredProjects": "Featured Projects",
+    "experience": "Experience",
+    "skills": "Skills & Technologies",
+    "blog": "Blog",
+    "ctaTitle": "Let's build something great.",
+    "ctaSubtitle": "Open to collaborations, consulting, and full-time opportunities in AI/ML and full-stack engineering.",
+    "getInTouch": "Get in touch",
+    "seeMyWork": "See my work"
+  },
+  "projects": {
+    "title": "Projects",
+    "loading": "Loading projects...",
+    "empty": "No projects yet. Check back soon."
+  },
+  "projectDetail": {
+    "loading": "Loading project...",
+    "notFound": "Project not found",
+    "back": "Back to projects"
+  },
+  "experience": {
+    "title": "Experience",
+    "loading": "Loading experience..."
+  },
+  "contact": {
+    "title": "Get in Touch",
+    "location": "Location",
+    "sendMessage": "Send a message",
+    "name": "Your name",
+    "email": "Your email",
+    "message": "Your message",
+    "openEmail": "Open email client",
+    "emailLabel": "Email",
+    "githubLabel": "GitHub",
+    "linkedinLabel": "LinkedIn",
+    "failedProfile": "Failed to load profile"
+  },
+  "blog": {
+    "title": "Blog",
+    "readMore": "Read",
+    "back": "Back to blog",
+    "empty": "No posts yet."
+  },
+  "notFound": {
+    "title": "Page not found",
+    "subtitle": "The page you're looking for doesn't exist.",
+    "goHome": "Go home"
+  },
+  "login": {
+    "title": "Admin Login",
+    "subtitle": "Enter the admin password to manage content.",
+    "password": "Password",
+    "submit": "Log in",
+    "submitting": "Logging in..."
+  },
+  "language": {
+    "label": "Language",
+    "en": "English",
+    "fr": "Français",
+    "zh": "中文 (简体)"
+  }
+}

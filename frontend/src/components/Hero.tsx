@@ -1,9 +1,11 @@
 import { motion } from 'framer-motion';
 import { ArrowRight, Download, MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import type { Profile } from '../lib/types';
 
 export function Hero({ profile }: { profile: Profile }) {
+  const { t } = useTranslation();
   return (
     <section className="relative overflow-hidden pt-32 pb-20 md:pt-44 md:pb-28">
       {/* ambient glow */}
@@ -62,14 +64,14 @@ export function Hero({ profile }: { profile: Profile }) {
             className="mt-8 flex flex-wrap justify-center gap-4 md:justify-start"
           >
             <Link to="/projects" className="btn-primary">
-              View Projects <ArrowRight size={16} />
+              {t('hero.viewProjects')} <ArrowRight size={16} />
             </Link>
             <Link to="/contact" className="btn-secondary">
-              Let&apos;s Talk
+              {t('hero.letsTalk')}
             </Link>
             {profile.resume_url && (
               <a href={profile.resume_url} className="btn-secondary" download>
-                <Download size={16} /> Resume
+                <Download size={16} /> {t('hero.resume')}
               </a>
             )}
           </motion.div>

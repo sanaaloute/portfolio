@@ -2,51 +2,64 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import { authApi } from '../lib/api';
 
 interface AuthContextValue {
-  token: string | null;
   isAuthenticated: boolean;
+  checking: boolean;
   login: (password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   error: string | null;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [token, setToken] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [checking, setChecking] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const stored = localStorage.getItem('portfolio_token');
-    if (stored) setToken(stored);
+    let alive = true;
+    authApi
+      .me()
+      .then(() => {
+        if (alive) setIsAuthenticated(true);
+      })
+      .catch(() => {
+        if (alive) setIsAuthenticated(false);
+      })
+      .finally(() => {
+        if (alive) setChecking(false);
+      });
+
+    const onChanged = () => setIsAuthenticated(false);
+    window.addEventListener('auth:changed', onChanged);
+    return () => {
+      alive = false;
+      window.removeEventListener('auth:changed', onChanged);
+    };
   }, []);
 
   const login = async (password: string) => {
     setError(null);
     try {
-      const response = await authApi.login({ password });
-      localStorage.setItem('portfolio_token', response.access_token);
-      setToken(response.access_token);
+      await authApi.login({ password });
+      setIsAuthenticated(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
       throw err;
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('portfolio_token');
-    setToken(null);
+  const logout = async () => {
+    try {
+      await authApi.logout();
+    } catch {
+      // ignore — clear client state regardless
+    }
+    setIsAuthenticated(false);
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        token,
-        isAuthenticated: !!token,
-        login,
-        logout,
-        error,
-      }}
-    >
+    <AuthContext.Provider value={{ isAuthenticated, checking, login, logout, error }}>
       {children}
     </AuthContext.Provider>
   );

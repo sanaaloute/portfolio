@@ -1,14 +1,16 @@
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import type { Experience } from '../lib/types';
 
 export function ExperienceTimeline({ experiences }: { experiences: Experience[] }) {
+  const { t } = useTranslation();
   return (
     <div className="relative space-y-8 md:space-y-12">
       <div className="absolute left-4 top-2 bottom-2 w-px bg-border md:left-1/2" />
       {experiences.map((exp, index) => {
         const period = exp.end_date
           ? `${new Date(exp.start_date).getFullYear()} – ${new Date(exp.end_date).getFullYear()}`
-          : `${new Date(exp.start_date).getFullYear()} – Present`;
+          : `${new Date(exp.start_date).getFullYear()} – ${t('common.present')}`;
         const isLeft = index % 2 === 0;
         return (
           <motion.div

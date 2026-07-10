@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { PageWrapper } from '../components/PageWrapper';
 import { useAuth } from '../context/AuthContext';
 
 export function Login() {
+  const { t } = useTranslation();
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const { login, error } = useAuth();
@@ -32,21 +34,21 @@ export function Login() {
               <Lock size={20} />
             </div>
           </div>
-          <h1 className="text-center font-display text-2xl font-bold text-text">Admin Login</h1>
-          <p className="mt-2 text-center text-sm text-text-muted">Enter the admin password to manage content.</p>
+          <h1 className="text-center font-display text-2xl font-bold text-text">{t('login.title')}</h1>
+          <p className="mt-2 text-center text-sm text-text-muted">{t('login.subtitle')}</p>
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
+              placeholder={t('login.password')}
               className="input"
               required
             />
             {error && <p className="text-sm text-red-300">{error}</p>}
             <button type="submit" disabled={submitting} className="btn-primary w-full">
-              {submitting ? 'Logging in...' : 'Log in'}
+              {submitting ? t('login.submitting') : t('login.submit')}
             </button>
           </form>
         </div>
