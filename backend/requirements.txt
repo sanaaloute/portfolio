@@ -13,6 +13,6 @@ python-slugify==8.0.4
 aiofiles==25.1.0
 eval-type-backport==0.4.0
 cryptography==49.0.0
-bcrypt==5.0.0
+bcrypt==4.0.1
 slowapi==0.1.9
 limits==4.2
