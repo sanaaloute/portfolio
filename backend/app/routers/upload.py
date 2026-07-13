@@ -23,6 +23,12 @@ ALLOWED_RESUME_TYPES = {
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
 }
 
+ALLOWED_VIDEO_TYPES = {
+    "video/mp4": "mp4",
+    "video/webm": "webm",
+    "video/quicktime": "mov",
+}
+
 
 def _upload_path(filename: str) -> Path:
     settings.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
@@ -30,6 +36,9 @@ def _upload_path(filename: str) -> Path:
     if not str(path).startswith(str(settings.UPLOAD_DIR.resolve())):
         raise HTTPException(status_code=400, detail="Invalid filename")
     return path
+
+
+IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
 
 
 @router.post("/image", status_code=status.HTTP_201_CREATED)
@@ -80,6 +89,30 @@ async def upload_resume(file: UploadFile = File(...), user=Depends(get_current_u
     return {"url": f"/uploads/{filename}", "filename": filename}
 
 
+@router.post("/video", status_code=status.HTTP_201_CREATED)
+async def upload_video(file: UploadFile = File(...), user=Depends(get_current_user)):
+    content_type = file.content_type or ""
+    if content_type not in ALLOWED_VIDEO_TYPES:
+        raise HTTPException(status_code=400, detail=f"Invalid file type: {content_type}")
+
+    ext = Path(file.filename or "").suffix.lstrip(".").lower()
+    if ext not in {"mp4", "webm", "mov"}:
+        ext = ALLOWED_VIDEO_TYPES[content_type]
+    filename = f"{uuid.uuid4().hex}.{ext}"
+    path = _upload_path(filename)
+
+    total = 0
+    async with aiofiles.open(path, "wb") as out:
+        while chunk := await file.read(1024 * 1024):
+            total += len(chunk)
+            if total > settings.MAX_VIDEO_UPLOAD_SIZE:
+                path.unlink(missing_ok=True)
+                raise HTTPException(status_code=413, detail="File too large")
+            await out.write(chunk)
+
+    return {"url": f"/uploads/{filename}", "filename": filename}
+
+
 @router.get("/images")
 async def list_images(user=Depends(get_current_user)):
     settings.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
@@ -87,7 +120,7 @@ async def list_images(user=Depends(get_current_user)):
     return [
         {"url": f"/uploads/{f.name}", "filename": f.name}
         for f in files
-        if f.is_file()
+        if f.is_file() and f.suffix.lower() in IMAGE_EXTENSIONS
     ]
 
 

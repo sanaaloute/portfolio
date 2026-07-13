@@ -1,11 +1,14 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Download, MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { Profile } from '../lib/types';
+import { getResumeUrl, getResumeFilename } from '../lib/resume';
 
 export function Hero({ profile }: { profile: Profile }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const [avatarError, setAvatarError] = useState(false);
   return (
     <section className="relative overflow-hidden pt-32 pb-20 md:pt-44 md:pb-28">
       {/* ambient glow */}
@@ -22,11 +25,12 @@ export function Hero({ profile }: { profile: Profile }) {
         >
           <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-accent to-accent-2 opacity-30 blur-2xl" />
           <div className="relative h-40 w-40 overflow-hidden rounded-full border-2 border-border-strong bg-surface md:h-52 md:w-52">
-            {profile.avatar_url ? (
+            {profile.avatar_url && !avatarError ? (
               <img
                 src={profile.avatar_url}
                 alt={profile.name}
                 className="h-full w-full object-cover"
+                onError={() => setAvatarError(true)}
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center text-4xl font-bold text-text-muted">
@@ -69,11 +73,13 @@ export function Hero({ profile }: { profile: Profile }) {
             <Link to="/contact" className="btn-secondary">
               {t('hero.letsTalk')}
             </Link>
-            {profile.resume_url && (
-              <a href={profile.resume_url} className="btn-secondary" download>
-                <Download size={16} /> {t('hero.resume')}
-              </a>
-            )}
+            <a
+              href={getResumeUrl(i18n.language, profile.resume_url)}
+              className="btn-secondary"
+              download={getResumeFilename(i18n.language)}
+            >
+              <Download size={16} /> {t('hero.resume')}
+            </a>
           </motion.div>
 
           {profile.hero_stats.length > 0 && (

@@ -24,6 +24,8 @@ const Dashboard = lazy(() => import('./pages/admin/Dashboard').then((m) => ({ de
 const ProfileEditor = lazy(() => import('./pages/admin/ProfileEditor').then((m) => ({ default: m.ProfileEditor })));
 const ProjectsManager = lazy(() => import('./pages/admin/ProjectsManager').then((m) => ({ default: m.ProjectsManager })));
 const ExperienceManager = lazy(() => import('./pages/admin/ExperienceManager').then((m) => ({ default: m.ExperienceManager })));
+const EducationManager = lazy(() => import('./pages/admin/EducationManager').then((m) => ({ default: m.EducationManager })));
+const CertificationsManager = lazy(() => import('./pages/admin/CertificationsManager').then((m) => ({ default: m.CertificationsManager })));
 const SkillsManager = lazy(() => import('./pages/admin/SkillsManager').then((m) => ({ default: m.SkillsManager })));
 const BlogManager = lazy(() => import('./pages/admin/BlogManager').then((m) => ({ default: m.BlogManager })));
 const UploadsManager = lazy(() => import('./pages/admin/UploadsManager').then((m) => ({ default: m.UploadsManager })));
@@ -55,6 +57,8 @@ function App() {
                 <Route path="profile" element={withSuspense(<ProfileEditor />)} />
                 <Route path="projects" element={withSuspense(<ProjectsManager />)} />
                 <Route path="experience" element={withSuspense(<ExperienceManager />)} />
+                <Route path="education" element={withSuspense(<EducationManager />)} />
+                <Route path="certifications" element={withSuspense(<CertificationsManager />)} />
                 <Route path="skills" element={withSuspense(<SkillsManager />)} />
                 <Route path="blog" element={withSuspense(<BlogManager />)} />
                 <Route path="uploads" element={withSuspense(<UploadsManager />)} />

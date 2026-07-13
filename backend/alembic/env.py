@@ -10,7 +10,7 @@ from alembic import context
 
 from app.config import settings
 from app.db import Base
-from app.models import Blog, Experience, Profile, Project, Skill  # noqa: F401
+from app.models import Blog, Certification, Education, Experience, Profile, Project, Skill  # noqa: F401
 
 config = context.config
 

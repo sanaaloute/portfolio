@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { projectsApi } from '../../lib/api';
+import { Upload, X, Star } from 'lucide-react';
+import { projectsApi, uploadApi } from '../../lib/api';
 import type { Project } from '../../lib/types';
 import { LoadingState, ErrorState } from '../../components/LoadingState';
 import { RichTextEditor } from '../../components/RichTextEditor';
@@ -14,6 +15,8 @@ const emptyProject: Partial<Project> = {
   location: '',
   stack: [],
   cover_url: '',
+  demo_url: '',
+  images: [],
   featured: false,
   position: 0,
 };
@@ -24,6 +27,7 @@ export function ProjectsManager() {
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Partial<Project> | null>(null);
   const [saving, setSaving] = useState(false);
+  const [videoUploading, setVideoUploading] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -54,6 +58,8 @@ export function ProjectsManager() {
       location: (form.get('location') as string) || null,
       stack: (form.get('stack') as string).split(',').map((s) => s.trim()).filter(Boolean),
       cover_url: (form.get('cover_url') as string) || null,
+      demo_url: editing?.demo_url || null,
+      images: editing?.images || [],
       featured: form.has('featured'),
       position: Number(form.get('position') || 0),
     };
@@ -80,6 +86,39 @@ export function ProjectsManager() {
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Delete failed');
     }
+  };
+
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !editing) return;
+    setVideoUploading(true);
+    try {
+      const res = await uploadApi.uploadVideo(file);
+      setEditing({ ...editing, demo_url: res.url });
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Video upload failed');
+    } finally {
+      setVideoUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  const addGalleryImage = (url: string) => {
+    if (!editing) return;
+    const images = editing.images || [];
+    if (images.some((img) => img.url === url)) return;
+    setEditing({ ...editing, images: [...images, { url, caption: '' }] });
+  };
+
+  const updateGalleryCaption = (index: number, caption: string) => {
+    if (!editing?.images) return;
+    const images = editing.images.map((img, i) => (i === index ? { ...img, caption } : img));
+    setEditing({ ...editing, images });
+  };
+
+  const removeGalleryImage = (index: number) => {
+    if (!editing?.images) return;
+    setEditing({ ...editing, images: editing.images.filter((_, i) => i !== index) });
   };
 
   if (loading) return <LoadingState message="Loading projects..." />;
@@ -141,6 +180,34 @@ export function ProjectsManager() {
                 </div>
               </div>
               <div className="md:col-span-2">
+                <label className="label">Demo Video URL</label>
+                <input
+                  name="demo_url"
+                  value={editing.demo_url || ''}
+                  onChange={(e) => setEditing({ ...editing, demo_url: e.target.value })}
+                  placeholder="/uploads/....mp4 or external URL"
+                  className="input"
+                />
+                <div className="mt-2 flex flex-wrap items-center gap-3">
+                  <label className="btn-secondary cursor-pointer py-2 text-xs">
+                    <Upload size={14} />
+                    {videoUploading ? 'Uploading...' : 'Upload video (mp4/webm/mov, max 50MB)'}
+                    <input
+                      type="file"
+                      accept="video/mp4,video/webm,video/quicktime"
+                      className="hidden"
+                      onChange={handleVideoUpload}
+                      disabled={videoUploading}
+                    />
+                  </label>
+                  {editing.demo_url && (
+                    <a href={editing.demo_url} target="_blank" rel="noreferrer" className="text-xs text-accent hover:underline">
+                      Preview current video
+                    </a>
+                  )}
+                </div>
+              </div>
+              <div className="md:col-span-2">
                 <label className="label">Summary</label>
                 <textarea name="summary" defaultValue={editing.summary} rows={3} className="input" required />
               </div>
@@ -159,7 +226,40 @@ export function ProjectsManager() {
             </div>
           </form>
           <div className="mt-6 border-t border-border pt-4">
-            <ImageGallery onSelect={(url) => setEditing({ ...editing, cover_url: url })} />
+            <label className="label">Gallery Images ({editing.images?.length || 0})</label>
+            {editing.images && editing.images.length > 0 && (
+              <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {editing.images.map((img, i) => (
+                  <div key={i} className="surface flex items-center gap-3 p-2">
+                    <img src={img.url} alt={img.caption || ''} className="h-14 w-14 flex-shrink-0 rounded-lg object-cover" />
+                    <input
+                      value={img.caption || ''}
+                      onChange={(e) => updateGalleryCaption(i, e.target.value)}
+                      placeholder="Caption (optional)"
+                      className="input flex-1"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setEditing({ ...editing, cover_url: img.url })}
+                      title="Set as cover"
+                      className="rounded-lg p-1.5 text-text-muted hover:bg-surface-2 hover:text-accent"
+                    >
+                      <Star size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeGalleryImage(i)}
+                      title="Remove"
+                      className="rounded-lg p-1.5 text-text-muted hover:bg-surface-2 hover:text-red-300"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="mb-2 text-xs text-text-muted">Click an uploaded image to add it to the gallery.</p>
+            <ImageGallery onSelect={addGalleryImage} />
           </div>
         </div>
       )}

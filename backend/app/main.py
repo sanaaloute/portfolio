@@ -11,7 +11,7 @@ from slowapi.errors import RateLimitExceeded
 from app.config import settings
 from app.db import engine
 from app.limiter import limiter
-from app.routers import auth, blogs, experiences, profile, projects, skills, upload
+from app.routers import auth, blogs, certifications, education, experiences, profile, projects, skills, upload
 
 
 @asynccontextmanager
@@ -48,6 +48,8 @@ app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(profile.router, prefix="/api/profile", tags=["profile"])
 app.include_router(projects.router, prefix="/api/projects", tags=["projects"])
 app.include_router(experiences.router, prefix="/api/experiences", tags=["experiences"])
+app.include_router(education.router, prefix="/api/education", tags=["education"])
+app.include_router(certifications.router, prefix="/api/certifications", tags=["certifications"])
 app.include_router(skills.router, prefix="/api/skills", tags=["skills"])
 app.include_router(blogs.router, prefix="/api/blogs", tags=["blogs"])
 app.include_router(upload.router, prefix="/api/upload", tags=["upload"])

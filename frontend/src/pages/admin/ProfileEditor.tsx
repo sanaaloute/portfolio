@@ -62,6 +62,7 @@ export function ProfileEditor() {
         bio: profile?.bio || '',
         avatar_url: (form.get('avatar_url') as string) || null,
         resume_url: (form.get('resume_url') as string) || null,
+        phone: (form.get('phone') as string) || null,
         location: (form.get('location') as string) || null,
         email: form.get('email') as string,
         github: (form.get('github') as string) || null,
@@ -141,6 +142,10 @@ export function ProfileEditor() {
                 </a>
               )}
             </div>
+          </div>
+          <div>
+            <label className="label">Phone</label>
+            <input name="phone" defaultValue={profile.phone || ''} className="input" />
           </div>
           <div>
             <label className="label">Location</label>

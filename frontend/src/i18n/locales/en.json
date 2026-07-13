@@ -47,11 +47,19 @@
   "projectDetail": {
     "loading": "Loading project...",
     "notFound": "Project not found",
-    "back": "Back to projects"
+    "back": "Back to projects",
+    "demo": "Demo",
+    "gallery": "Gallery"
   },
   "experience": {
     "title": "Experience",
     "loading": "Loading experience..."
+  },
+  "education": {
+    "title": "Education"
+  },
+  "certifications": {
+    "title": "Certifications"
   },
   "contact": {
     "title": "Get in Touch",
@@ -62,6 +70,7 @@
     "message": "Your message",
     "openEmail": "Open email client",
     "emailLabel": "Email",
+    "phoneLabel": "Phone",
     "githubLabel": "GitHub",
     "linkedinLabel": "LinkedIn",
     "failedProfile": "Failed to load profile"

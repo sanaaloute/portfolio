@@ -33,6 +33,7 @@ class Settings(BaseSettings):
 
     UPLOAD_DIR: Path = Path(__file__).resolve().parent.parent / "uploads"
     MAX_UPLOAD_SIZE: int = 5 * 1024 * 1024  # 5 MB
+    MAX_VIDEO_UPLOAD_SIZE: int = 50 * 1024 * 1024  # 50 MB
 
     @field_validator("JWT_SECRET")
     @classmethod

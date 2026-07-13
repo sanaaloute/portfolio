@@ -1,20 +1,22 @@
-import { Mail, MapPin, Github, Linkedin, ArrowUpRight } from 'lucide-react';
+import { Mail, MapPin, Github, Linkedin, ArrowUpRight, Phone, Download } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { PageWrapper } from '../components/PageWrapper';
 import { SectionHeading } from '../components/SectionHeading';
 import { useApi } from '../hooks/useApi';
 import { profileApi } from '../lib/api';
+import { getResumeUrl, getResumeFilename } from '../lib/resume';
 import { LoadingState, ErrorState } from '../components/LoadingState';
 
 export function Contact() {
   const { data: profile, loading, error } = useApi(profileApi.get);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   if (loading) return <LoadingState />;
   if (error || !profile) return <ErrorState message={error || t('contact.failedProfile')} />;
 
   const links = [
     { icon: Mail, label: t('contact.emailLabel'), value: profile.email, href: `mailto:${profile.email}` },
+    { icon: Phone, label: t('contact.phoneLabel'), value: profile.phone, href: profile.phone ? `tel:${profile.phone.replace(/\s+/g, '')}` : null },
     { icon: Github, label: t('contact.githubLabel'), value: profile.github?.replace('https://', ''), href: profile.github },
     { icon: Linkedin, label: t('contact.linkedinLabel'), value: profile.linkedin?.replace('https://', ''), href: profile.linkedin },
   ].filter((l) => l.value);
@@ -60,6 +62,16 @@ export function Contact() {
               </div>
             </div>
           )}
+        </div>
+
+        <div className="mt-6 flex justify-center">
+          <a
+            href={getResumeUrl(i18n.language, profile.resume_url)}
+            className="btn-secondary"
+            download={getResumeFilename(i18n.language)}
+          >
+            <Download size={16} /> {t('nav.downloadCv')}
+          </a>
         </div>
 
         <div className="mt-10 surface p-6 md:p-8">

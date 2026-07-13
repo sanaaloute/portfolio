@@ -1,5 +1,7 @@
 import type {
   Blog,
+  Certification,
+  Education,
   Experience,
   LoginCredentials,
   Profile,
@@ -101,6 +103,30 @@ export const experiencesApi = {
     request<void>(`/api/experiences/${slug}`, { method: 'DELETE' }),
 };
 
+// Education
+export const educationApi = {
+  list: () => request<Education[]>('/api/education'),
+  get: (slug: string) => request<Education>(`/api/education/${slug}`),
+  create: (payload: Partial<Education>) =>
+    request<Education>('/api/education', { method: 'POST', body: JSON.stringify(payload) }),
+  update: (slug: string, payload: Partial<Education>) =>
+    request<Education>(`/api/education/${slug}`, { method: 'PUT', body: JSON.stringify(payload) }),
+  delete: (slug: string) =>
+    request<void>(`/api/education/${slug}`, { method: 'DELETE' }),
+};
+
+// Certifications
+export const certificationsApi = {
+  list: () => request<Certification[]>('/api/certifications'),
+  get: (slug: string) => request<Certification>(`/api/certifications/${slug}`),
+  create: (payload: Partial<Certification>) =>
+    request<Certification>('/api/certifications', { method: 'POST', body: JSON.stringify(payload) }),
+  update: (slug: string, payload: Partial<Certification>) =>
+    request<Certification>(`/api/certifications/${slug}`, { method: 'PUT', body: JSON.stringify(payload) }),
+  delete: (slug: string) =>
+    request<void>(`/api/certifications/${slug}`, { method: 'DELETE' }),
+};
+
 // Skills
 export const skillsApi = {
   list: () => request<SkillGroup[]>('/api/skills'),
@@ -137,6 +163,14 @@ export const uploadApi = {
     const formData = new FormData();
     formData.append('file', file);
     return request<UploadedImage>('/api/upload/resume', {
+      method: 'POST',
+      body: formData,
+    });
+  },
+  uploadVideo: (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return request<UploadedImage>('/api/upload/video', {
       method: 'POST',
       body: formData,
     });

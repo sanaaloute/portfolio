@@ -6,6 +6,7 @@ export interface Profile {
   bio: string;
   avatar_url: string | null;
   resume_url: string | null;
+  phone: string | null;
   location: string | null;
   email: string;
   github: string | null;
@@ -27,6 +28,7 @@ export interface Project {
   location: string | null;
   stack: string[];
   cover_url: string | null;
+  demo_url: string | null;
   images: { url: string; caption?: string }[];
   featured: boolean;
   position: number;
@@ -60,6 +62,32 @@ export interface Blog {
   cover_url: string | null;
   published: boolean;
   published_at?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Education {
+  id: number;
+  slug: string;
+  institution: string;
+  degree: string;
+  location: string | null;
+  start_date: string;
+  end_date: string | null;
+  description: string | null;
+  position: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Certification {
+  id: number;
+  slug: string;
+  name: string;
+  issuer: string;
+  year: string | null;
+  url: string | null;
+  position: number;
   created_at?: string;
   updated_at?: string;
 }

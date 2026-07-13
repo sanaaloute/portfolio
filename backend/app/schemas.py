@@ -11,6 +11,7 @@ class ProfileBase(BaseModel):
     bio: str
     avatar_url: str | None = None
     resume_url: str | None = None
+    phone: str | None = None
     location: str | None = None
     email: str
     github: str | None = None
@@ -32,6 +33,7 @@ class ProfileUpdate(BaseModel):
     bio: str | None = None
     avatar_url: str | None = None
     resume_url: str | None = None
+    phone: str | None = None
     location: str | None = None
     email: str | None = None
     github: str | None = None
@@ -57,6 +59,7 @@ class ProjectBase(BaseModel):
     location: str | None = None
     stack: list[str] = Field(default_factory=list)
     cover_url: str | None = None
+    demo_url: str | None = None
     images: list[dict[str, Any]] = Field(default_factory=list)
     featured: bool = False
     position: int = 0
@@ -75,6 +78,7 @@ class ProjectUpdate(BaseModel):
     location: str | None = None
     stack: list[str] | None = None
     cover_url: str | None = None
+    demo_url: str | None = None
     images: list[dict[str, Any]] | None = None
     featured: bool | None = None
     position: int | None = None
@@ -154,6 +158,70 @@ class BlogResponse(BlogBase):
     id: int
     slug: str
     published_at: datetime | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+    model_config = ConfigDict(from_attributes=True)
+
+
+class EducationBase(BaseModel):
+    slug: str | None = None
+    institution: str
+    degree: str
+    location: str | None = None
+    start_date: date
+    end_date: date | None = None
+    description: str | None = None
+    position: int = 0
+
+
+class EducationCreate(EducationBase):
+    pass
+
+
+class EducationUpdate(BaseModel):
+    slug: str | None = None
+    institution: str | None = None
+    degree: str | None = None
+    location: str | None = None
+    start_date: date | None = None
+    end_date: date | None = None
+    description: str | None = None
+    position: int | None = None
+
+
+class EducationResponse(EducationBase):
+    id: int
+    slug: str
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CertificationBase(BaseModel):
+    slug: str | None = None
+    name: str
+    issuer: str
+    year: str | None = None
+    url: str | None = None
+    position: int = 0
+
+
+class CertificationCreate(CertificationBase):
+    pass
+
+
+class CertificationUpdate(BaseModel):
+    slug: str | None = None
+    name: str | None = None
+    issuer: str | None = None
+    year: str | None = None
+    url: str | None = None
+    position: int | None = None
+
+
+class CertificationResponse(CertificationBase):
+    id: int
+    slug: str
     created_at: datetime | None = None
     updated_at: datetime | None = None
     model_config = ConfigDict(from_attributes=True)

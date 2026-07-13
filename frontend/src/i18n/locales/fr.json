@@ -47,11 +47,19 @@
   "projectDetail": {
     "loading": "Chargement du projet...",
     "notFound": "Projet introuvable",
-    "back": "Retour aux projets"
+    "back": "Retour aux projets",
+    "demo": "Démo",
+    "gallery": "Galerie"
   },
   "experience": {
     "title": "Expérience",
     "loading": "Chargement de l'expérience..."
+  },
+  "education": {
+    "title": "Formation"
+  },
+  "certifications": {
+    "title": "Certifications"
   },
   "contact": {
     "title": "Me contacter",
@@ -62,6 +70,7 @@
     "message": "Votre message",
     "openEmail": "Ouvrir le client e-mail",
     "emailLabel": "E-mail",
+    "phoneLabel": "Téléphone",
     "githubLabel": "GitHub",
     "linkedinLabel": "LinkedIn",
     "failedProfile": "Échec du chargement du profil"

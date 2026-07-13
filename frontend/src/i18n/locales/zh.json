@@ -47,11 +47,19 @@
   "projectDetail": {
     "loading": "正在加载项目...",
     "notFound": "未找到项目",
-    "back": "返回项目列表"
+    "back": "返回项目列表",
+    "demo": "演示视频",
+    "gallery": "图片集"
   },
   "experience": {
     "title": "工作经历",
     "loading": "正在加载经历..."
+  },
+  "education": {
+    "title": "教育背景"
+  },
+  "certifications": {
+    "title": "专业认证"
   },
   "contact": {
     "title": "联系我",
@@ -62,6 +70,7 @@
     "message": "您的留言",
     "openEmail": "打开邮件客户端",
     "emailLabel": "邮箱",
+    "phoneLabel": "电话",
     "githubLabel": "GitHub",
     "linkedinLabel": "LinkedIn",
     "failedProfile": "加载个人资料失败"

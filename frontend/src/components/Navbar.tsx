@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useApi } from '../hooks/useApi';
 import { profileApi, blogsApi } from '../lib/api';
+import { getResumeUrl, getResumeFilename } from '../lib/resume';
 import { LanguageSwitcher, LanguageSwitcherInline } from './LanguageSwitcher';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -22,7 +23,9 @@ export function Navbar() {
   const location = useLocation();
   const { data: profile } = useApi(profileApi.get);
   const { data: blogs } = useApi(blogsApi.list);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const resumeUrl = getResumeUrl(i18n.language, profile?.resume_url);
+  const resumeFilename = getResumeFilename(i18n.language);
 
   const links = blogs?.length
     ? [...navLinks.slice(0, 3), { key: 'nav.blog', path: '/blog' }, ...navLinks.slice(3)]
@@ -67,11 +70,9 @@ export function Navbar() {
           <div className="hidden md:block">
             <LanguageSwitcher />
           </div>
-          {profile?.resume_url && (
-            <a href={profile.resume_url} className="btn-secondary hidden py-2 text-xs md:inline-flex" download>
-              <Download size={14} /> {t('nav.downloadCv')}
-            </a>
-          )}
+          <a href={resumeUrl} className="btn-secondary hidden py-2 text-xs md:inline-flex" download={resumeFilename}>
+            <Download size={14} /> {t('nav.downloadCv')}
+          </a>
           {isAuthenticated && (
             <button onClick={handleLogout} className="btn-secondary hidden py-2 text-xs md:inline-flex">
               {t('nav.logout')}
@@ -116,13 +117,11 @@ export function Navbar() {
                   </Link>
                 </li>
               )}
-              {profile?.resume_url && (
-                <li className="pt-2">
-                  <a href={profile.resume_url} onClick={() => setOpen(false)} className="btn-secondary block w-full py-2 text-center text-xs" download>
-                    <Download size={14} /> {t('nav.downloadCv')}
-                  </a>
-                </li>
-              )}
+              <li className="pt-2">
+                <a href={resumeUrl} onClick={() => setOpen(false)} className="btn-secondary block w-full py-2 text-center text-xs" download={resumeFilename}>
+                  <Download size={14} /> {t('nav.downloadCv')}
+                </a>
+              </li>
               {isAuthenticated && (
                 <li className="pt-2">
                   <button onClick={handleLogout} className="btn-secondary w-full py-2 text-xs">
