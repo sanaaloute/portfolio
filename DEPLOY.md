@@ -114,7 +114,7 @@ nano .env                       # set POSTGRES_PASSWORD, JWT_SECRET, CORS_ORIGIN
 #   leave ADMIN_PASSWORD_HASH empty for now (set it after the first build)
 
 # 1) Backend + database (Docker)
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+docker compose up -d --build
 
 # 2) Frontend: build static files and publish them for the host nginx
 cd frontend && npm ci && npm run build && cd ..
@@ -150,7 +150,7 @@ sudo certbot renew --force-renewal --webroot -w /var/www/letsencrypt
 
 ```bash
 # 1) Generate the hash (raw, single '$')
-HASH=$(docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm -T backend \
+HASH=$(docker compose run --rm -T backend \
   python -m app.security 'YourStrongPassword' | tr -d '\r\n')
 
 # 2) Write it into .env with every '$' doubled, and clear the plaintext password
@@ -162,7 +162,7 @@ else
 fi
 
 # 3) Recreate the backend so it loads the hash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d backend
+docker compose up -d backend
 ```
 > On macOS, use `sed -i ''` instead of `sed -i`.
 > The result in `.env` looks like: `ADMIN_PASSWORD_HASH=$$2b$$12$$…` (note the doubled `$`).
@@ -170,7 +170,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d backend
 ## 7. Verify
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml ps     # db + backend Up/healthy
+docker compose ps     # db + backend Up/healthy
 curl -s http://127.0.0.1:8000/health                                       # backend reachable locally
 sudo nginx -t && systemctl status nginx
 curl -I https://aloutesana.ai-web-builder.com                          # HTTP/2 200
@@ -220,8 +220,8 @@ aws ecr get-login-password --region <region> | \
 echo 'BACKEND_IMAGE=<account>.dkr.ecr.<region>.amazonaws.com/portfolio-backend:latest' >> .env
 
 # Pull and run (no --build!)
-docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+docker compose pull
+docker compose up -d
 ```
 
 ## 9. Update / rollback
@@ -234,7 +234,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 git pull
 
 # Backend (if changed)
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build backend
+docker compose up -d --build backend
 #   — or, in ECR pull mode:  docker compose ... pull && docker compose ... up -d
 
 # Frontend (if changed)
@@ -250,7 +250,7 @@ Rollback: `git checkout <prev-commit>` then re-run the steps above.
 Data lives in Docker named volumes `pgdata` and `uploads`. For a portfolio the simplest
 backup is periodic EBS snapshots of the instance volume. To dump the DB manually:
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml exec db \
+docker compose exec db \
   pg_dump -U portfolio portfolio > backup-$(date +%F).sql
 ```
 

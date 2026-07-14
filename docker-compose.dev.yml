@@ -1,3 +1,14 @@
+# =============================================================================
+# Development override (Vite dev server with hot reload, source mounts, dev DB
+# port). Base file is the production setup — dev always needs both files:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+#
+#   db:      localhost:5433 -> 5432
+#   backend: localhost:8000 -> 8000 (inherited from base, 127.0.0.1 binding)
+#   web:     localhost:5173 (Vite, proxies /api and /uploads to backend)
+# =============================================================================
+
 services:
   db:
     ports:
@@ -12,8 +23,7 @@ services:
       - uploads:/app/uploads
     entrypoint: ["./entrypoint.dev.sh"]
     command: []
-    ports:
-      - "8000:8000"
+    # ports inherited from base: 127.0.0.1:${BACKEND_HOST_PORT:-8000}:8000
 
   web:
     build:

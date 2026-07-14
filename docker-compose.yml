@@ -1,3 +1,24 @@
+# =============================================================================
+# Portfolio stack — PRODUCTION setup (this is the default compose file).
+#
+#   docker compose build        # build the backend image
+#   docker compose up -d        # start db + backend
+#
+#   db      - PostgreSQL 16 (internal only, never published to the host)
+#   backend - FastAPI + Alembic migrations, published on localhost only
+#
+# The reverse proxy (nginx) runs DIRECTLY ON THE HOST, not in Docker — see
+# deploy/nginx-portfolio.conf and DEPLOY.md. It serves the prebuilt frontend
+# (/var/www/portfolio) and proxies /api + /uploads to the backend.
+#
+# For local development (Vite dev server, hot reload):
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+#
+# Host requirements: nginx + certbot (deploy/deploy.sh handles both), DNS A
+# record, Security Group TCP 80/443 open, and a real .env (see
+# .env.production.example).
+# =============================================================================
+
 services:
   db:
     image: postgres:16-alpine
@@ -19,9 +40,9 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    # NOTE: in production the port is published on 127.0.0.1 only (see
-    # docker-compose.prod.yml) so the host nginx can proxy to it. In dev,
-    # docker-compose.dev.yml publishes it on 8000 directly.
+    # `image` lets the instance PULL a prebuilt image (e.g. from ECR) instead of
+    # building locally — set BACKEND_IMAGE in .env (see DEPLOY.md "CI/CD with ECR").
+    image: ${BACKEND_IMAGE:-portfolio-backend:local}
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-portfolio}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required (min 32 chars, not the example placeholder)}
@@ -31,9 +52,16 @@ services:
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
     volumes:
       - uploads:/app/uploads
+    # Localhost-only: reachable by the host nginx, never from the internet.
+    # BACKEND_HOST_PORT is configurable in case another container on the host
+    # already uses 8000 — the deploy scripts render the nginx proxy_pass to match.
+    ports:
+      - "127.0.0.1:${BACKEND_HOST_PORT:-8000}:8000"
     depends_on:
       db:
         condition: service_healthy
+    # NOTE: depends_on only applies at `compose up` time. The entrypoint also
+    # waits for the DB itself, so restarts (reboot, crash loop) are safe too.
 
 volumes:
   pgdata:

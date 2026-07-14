@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
 # First-time deployment of the portfolio stack on a fresh EC2 instance.
-# Supports Ubuntu 22.04/24.04 and Amazon Linux 2023.
+# Supports Ubuntu 22.04/24.04 and Amazon Linux 2023. Idempotent: safe to re-run.
 #
 # One command:
 #   bash deploy/deploy.sh
@@ -10,7 +10,7 @@
 #   CERTBOT_EMAIL=you@example.com   Let's Encrypt notification email
 #                                   (default: register without email)
 #
-# Prerequisites (manual, one-time, AWS console):
+# Prerequisites (manual, one-time):
 #   - Security Group inbound: TCP 22 (your IP), 80 + 443 (0.0.0.0/0)
 #   - DNS A record: aloutesana.ai-web-builder.com -> this instance's public IP
 # =============================================================================
@@ -20,7 +20,6 @@ DOMAIN="aloutesana.ai-web-builder.com"
 WEB_ROOT="/var/www/portfolio"
 ACME_WEBROOT="/var/www/letsencrypt"
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-COMPOSE="docker compose -f docker-compose.yml -f docker-compose.prod.yml"
 
 cd "$PROJECT_DIR"
 
@@ -29,9 +28,18 @@ warn() { printf '\n\033[1;33m!!  %s\033[0m\n' "$*"; }
 die()  { printf '\n\033[1;31mERROR: %s\033[0m\n' "$*" >&2; exit 1; }
 
 if [ "$(id -u)" -eq 0 ]; then SUDO=""; else SUDO="sudo"; fi
+COMPOSE="$SUDO docker compose"
+
+# BACKEND_HOST_PORT from .env (default 8000). Robust against duplicate lines,
+# CRLF endings and surrounding whitespace/quotes.
+host_port() {
+  local p
+  p="$(grep -E '^BACKEND_HOST_PORT=' .env 2>/dev/null | head -n1 | cut -d= -f2 | tr -d '\r' | xargs || true)"
+  echo "${p:-8000}"
+}
 
 # -----------------------------------------------------------------------------
-log "1/7  Detecting OS and installing packages"
+log "1/7  Installing packages (OS: $(. /etc/os-release && echo "$PRETTY_NAME"))"
 # -----------------------------------------------------------------------------
 . /etc/os-release
 case "$ID" in
@@ -45,8 +53,8 @@ case "$ID" in
       curl -fsSL https://deb.nodesource.com/setup_20.x | $SUDO -E bash -
       $SUDO apt-get install -y nodejs
     fi
-    NGINX_CONF_DIR="/etc/nginx/sites-available"
-    NGINX_ENABLE="$SUDO ln -sf /etc/nginx/sites-available/portfolio /etc/nginx/sites-enabled/portfolio"
+    NGINX_TARGET="/etc/nginx/sites-available/portfolio"
+    $SUDO ln -sf /etc/nginx/sites-available/portfolio /etc/nginx/sites-enabled/portfolio
     $SUDO rm -f /etc/nginx/sites-enabled/default
     ;;
   amzn)
@@ -54,29 +62,25 @@ case "$ID" in
     if ! command -v certbot >/dev/null 2>&1; then
       $SUDO dnf install -y python3-certbot-nginx 2>/dev/null || $SUDO pip3 install certbot-nginx
     fi
-    # Compose plugin (AL2023 docker package does not include it)
-    if ! docker compose version >/dev/null 2>&1; then
+    if ! $SUDO docker compose version >/dev/null 2>&1; then
       $SUDO mkdir -p /usr/local/lib/docker/cli-plugins
       $SUDO curl -SL "https://github.com/docker/compose/releases/latest/download/docker-compose-linux-$(uname -m)" \
         -o /usr/local/lib/docker/cli-plugins/docker-compose
       $SUDO chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
     fi
-    NGINX_CONF_DIR="/etc/nginx/conf.d"
-    NGINX_ENABLE="true"
+    NGINX_TARGET="/etc/nginx/conf.d/portfolio.conf"
     ;;
   *) die "Unsupported OS: $ID (supported: ubuntu, debian, amzn)" ;;
 esac
 
 $SUDO systemctl enable docker nginx
-# Docker commands run via sudo, so no group membership / re-login needed.
-COMPOSE="$SUDO $COMPOSE"
+# All docker commands run via sudo — no group membership / re-login needed.
 
 # -----------------------------------------------------------------------------
 log "2/7  Preparing .env"
 # -----------------------------------------------------------------------------
 if [ ! -f .env ]; then
   cp .env.production.example .env
-  # Generate secrets so a single command gets a working stack.
   sed -i "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$(openssl rand -hex 24)|" .env
   sed -i "s|^JWT_SECRET=.*|JWT_SECRET=$(openssl rand -hex 32)|" .env
   ADMIN_PW="$(openssl rand -hex 12)"
@@ -93,9 +97,9 @@ log "3/7  Starting Docker services (db + backend)"
 # -----------------------------------------------------------------------------
 if grep -q '^BACKEND_IMAGE=' .env; then
   $COMPOSE pull
-  $COMPOSE up -d
+  $COMPOSE up -d --remove-orphans
 else
-  $COMPOSE up -d --build
+  $COMPOSE up -d --build --remove-orphans
 fi
 
 # -----------------------------------------------------------------------------
@@ -106,24 +110,21 @@ $SUDO mkdir -p "$WEB_ROOT" "$ACME_WEBROOT"
 $SUDO rsync -a --delete frontend/dist/ "$WEB_ROOT/"
 
 # -----------------------------------------------------------------------------
-log "5/7  Installing nginx site config"
+log "5/7  Installing nginx site config (backend port $(host_port))"
 # -----------------------------------------------------------------------------
-# Substitute the backend host port (BACKEND_HOST_PORT in .env, default 8000)
-# into the proxy_pass targets while installing the config.
-HOST_PORT="$(grep -E '^BACKEND_HOST_PORT=' .env | head -n1 | cut -d= -f2 | tr -d '\r' | xargs || true)"
-HOST_PORT="${HOST_PORT:-8000}"
-sed "s|http://127.0.0.1:8000|http://127.0.0.1:${HOST_PORT}|g" deploy/nginx-portfolio.conf \
-  | $SUDO tee "$NGINX_CONF_DIR/portfolio" >/dev/null
-$NGINX_ENABLE
-# NOTE: no `nginx -t` yet — the config references the TLS certificate, which is
+# Render the backend host port into proxy_pass while installing.
+# No `nginx -t` yet: the config references the TLS certificate, which is only
 # issued in the next step. Validation happens there, right before nginx starts.
+sed "s|http://127.0.0.1:8000|http://127.0.0.1:$(host_port)|g" deploy/nginx-portfolio.conf \
+  | $SUDO tee "$NGINX_TARGET" >/dev/null
 
 # -----------------------------------------------------------------------------
 log "6/7  TLS certificate"
 # -----------------------------------------------------------------------------
 if [ -d "/etc/letsencrypt/live/$DOMAIN" ]; then
   log "Certificate already exists — skipping issuance"
-  $SUDO nginx -t && { $SUDO systemctl start nginx 2>/dev/null || $SUDO systemctl reload nginx; }
+  $SUDO nginx -t
+  $SUDO systemctl start nginx 2>/dev/null || $SUDO systemctl reload nginx
 else
   # nginx must not hold port 80 during standalone issuance
   $SUDO systemctl stop nginx || true
@@ -131,8 +132,9 @@ else
   [ -n "${CERTBOT_EMAIL:-}" ] && EMAIL_ARGS=(-m "$CERTBOT_EMAIL")
   $SUDO certbot certonly --standalone -d "$DOMAIN" \
     --non-interactive --agree-tos "${EMAIL_ARGS[@]}"
-  $SUDO nginx -t && $SUDO systemctl start nginx
-  # Switch renewal to webroot: future renewals work with nginx running (no downtime)
+  $SUDO nginx -t
+  $SUDO systemctl start nginx
+  # Switch renewal to webroot: future renewals work while nginx runs (no downtime)
   $SUDO certbot renew --force-renewal --webroot -w "$ACME_WEBROOT"
 fi
 
@@ -140,9 +142,20 @@ fi
 log "7/7  Verifying"
 # -----------------------------------------------------------------------------
 $COMPOSE ps
-HOST_PORT="$(grep -E '^BACKEND_HOST_PORT=' .env | head -n1 | cut -d= -f2 | tr -d '\r' | xargs || true)"
-curl -sf "http://127.0.0.1:${HOST_PORT:-8000}/health" >/dev/null \
-  && echo "backend health: OK" || warn "backend health check failed — check: $COMPOSE logs backend"
-curl -sI "https://$DOMAIN" | head -n 1 || warn "HTTPS check failed — DNS/Security Group?"
+
+# Give the backend a few seconds to pass migrations + healthcheck
+sleep 5
+if curl -sf "http://127.0.0.1:$(host_port)/health" >/dev/null; then
+  echo "backend health: OK"
+else
+  warn "backend health check failed — last 30 log lines:"
+  $COMPOSE logs --tail 30 backend || true
+fi
+
+if curl -sfI "https://$DOMAIN" >/dev/null; then
+  echo "HTTPS: OK (https://$DOMAIN)"
+else
+  warn "HTTPS check failed — DNS / Security Group?"
+fi
 
 log "DONE — site should be live at https://$DOMAIN"
