@@ -6,12 +6,14 @@ set -e
 echo "Waiting for database..."
 python - <<'PY'
 import os, socket, sys, time
-from urllib.parse import urlparse
 
-url = os.environ["DATABASE_URL"]
-parsed = urlparse(url)
-host = parsed.hostname or "db"
-port = parsed.port or 5432
+# Parse with SQLAlchemy (the same parser alembic/asyncpg will use) — see entrypoint.sh.
+from sqlalchemy.engine import make_url
+
+url = make_url(os.environ["DATABASE_URL"])
+host = url.host or "db"
+port = url.port or 5432
+print(f"Parsed DB target: host={host!r} port={port} (user={url.username!r}, db={url.database!r})")
 
 deadline = time.monotonic() + 120
 last_err = None

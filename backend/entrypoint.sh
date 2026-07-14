@@ -9,12 +9,19 @@ set -e
 echo "Waiting for database..."
 python - <<'PY'
 import os, socket, sys, time
-from urllib.parse import urlparse
 
-url = os.environ["DATABASE_URL"]
-parsed = urlparse(url)
-host = parsed.hostname or "db"
-port = parsed.port or 5432
+# Parse with SQLAlchemy (the same parser alembic/asyncpg will use), so that a
+# password containing URL-unsafe characters (/, #, %, &, ...) is detected here
+# instead of surfacing later as a cryptic DNS "Name or service not known".
+from sqlalchemy.engine import make_url
+
+url = make_url(os.environ["DATABASE_URL"])
+host = url.host or "db"
+port = url.port or 5432
+print(f"Parsed DB target: host={host!r} port={port} (user={url.username!r}, db={url.database!r})")
+if host not in ("db", "localhost", "127.0.0.1") and "." not in host:
+    print(f"WARNING: odd DB host {host!r} — check POSTGRES_PASSWORD for URL-unsafe "
+          f"characters (use letters/digits only).", file=sys.stderr)
 
 deadline = time.monotonic() + 120
 last_err = None

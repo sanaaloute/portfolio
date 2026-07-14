@@ -90,6 +90,17 @@ if [ ! -f .env ]; then
   warn "Recommended later: replace it with ADMIN_PASSWORD_HASH (see DEPLOY.md)."
 else
   log ".env already exists — keeping it"
+  # A POSTGRES_PASSWORD with URL-unsafe chars (/, #, %, &, ...) breaks SQLAlchemy's
+  # DATABASE_URL parsing (backend dies with a bogus "Name or service not known").
+  PW="$(grep -E '^POSTGRES_PASSWORD=' .env | head -n1 | cut -d= -f2 | tr -d '\r' || true)"
+  if printf '%s' "$PW" | grep -q '[/@#%&?]'; then
+    warn "POSTGRES_PASSWORD contains URL-unsafe characters (/ @ # % & ?)."
+    warn "The backend will fail with 'Name or service not known'. Fix it with:"
+    warn "  NEWPW=\$(openssl rand -hex 24)"
+    warn "  sudo docker compose exec db psql -U \${POSTGRES_USER:-portfolio} -c \"ALTER USER \${POSTGRES_USER:-portfolio} WITH PASSWORD '\$NEWPW';\""
+    warn "  sed -i \"s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=\$NEWPW|\" .env"
+    warn "  sudo docker compose up -d --force-recreate backend"
+  fi
 fi
 
 # -----------------------------------------------------------------------------
