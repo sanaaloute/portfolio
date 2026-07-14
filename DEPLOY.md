@@ -4,9 +4,10 @@ Stack: **nginx (on the host, TLS + static files + `/api`,`/uploads` proxy) → F
 Only `db` and `backend` run in Docker. nginx runs directly on the instance and serves the
 prebuilt frontend from `/var/www/portfolio`. TLS via Let's Encrypt (certbot).
 
-The `backend` container is published on **127.0.0.1:8000 only** (configurable via
-`BACKEND_HOST_PORT` if another container on the host already uses that port) — reachable
-by the host nginx, never from the internet. `db` is fully internal.
+The `backend` container is published on **127.0.0.1:8000 only** (set `BACKEND_HOST_PORT`
+in `.env` if another container on the host already uses that port — the deploy scripts
+render the nginx `proxy_pass` to match automatically) — reachable by the host nginx,
+never from the internet. `db` is fully internal.
 
 The instance may run other containers/sites alongside this stack. The nginx config is a
 `server_name` vhost, so it only handles requests for the domain below and coexists with

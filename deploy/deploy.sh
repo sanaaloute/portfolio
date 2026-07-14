@@ -108,7 +108,12 @@ $SUDO rsync -a --delete frontend/dist/ "$WEB_ROOT/"
 # -----------------------------------------------------------------------------
 log "5/7  Installing nginx site config"
 # -----------------------------------------------------------------------------
-$SUDO cp deploy/nginx-portfolio.conf "$NGINX_CONF_DIR/portfolio"
+# Substitute the backend host port (BACKEND_HOST_PORT in .env, default 8000)
+# into the proxy_pass targets while installing the config.
+HOST_PORT="$(grep -E '^BACKEND_HOST_PORT=' .env | cut -d= -f2 || true)"
+HOST_PORT="${HOST_PORT:-8000}"
+sed "s|http://127.0.0.1:8000|http://127.0.0.1:${HOST_PORT}|g" deploy/nginx-portfolio.conf \
+  | $SUDO tee "$NGINX_CONF_DIR/portfolio" >/dev/null
 $NGINX_ENABLE
 $SUDO nginx -t
 

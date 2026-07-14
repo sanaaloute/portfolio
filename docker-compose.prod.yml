@@ -22,7 +22,6 @@ services:
     image: ${BACKEND_IMAGE:-portfolio-backend:local}
     # Localhost-only: reachable by the host nginx, never from the internet.
     # BACKEND_HOST_PORT is configurable in case another container on the host
-    # already uses 8000 — if you change it, update proxy_pass in
-    # deploy/nginx-portfolio.conf to match.
+    # already uses 8000 — the deploy scripts render the nginx proxy_pass to match.
     ports:
       - "127.0.0.1:${BACKEND_HOST_PORT:-8000}:8000"

@@ -66,19 +66,27 @@ else
 fi
 
 # -----------------------------------------------------------------------------
-log "4/4  Reloading nginx (only if config changed)"
+log "4/4  Installing nginx config and reloading"
 # -----------------------------------------------------------------------------
-if changed "deploy/nginx-portfolio.conf"; then
-  if [ -d /etc/nginx/sites-available ]; then
-    $SUDO cp deploy/nginx-portfolio.conf /etc/nginx/sites-available/portfolio
-  else
-    $SUDO cp deploy/nginx-portfolio.conf /etc/nginx/conf.d/portfolio.conf
-  fi
-  $SUDO nginx -t && $SUDO systemctl reload nginx
-  log "nginx config updated and reloaded"
+# Always regenerate: the installed config is rendered with BACKEND_HOST_PORT
+# from .env, which may have changed even if the repo file didn't.
+HOST_PORT="$(grep -E '^BACKEND_HOST_PORT=' .env | cut -d= -f2 || true)"
+HOST_PORT="${HOST_PORT:-8000}"
+if [ -d /etc/nginx/sites-available ]; then
+  NGINX_TARGET="/etc/nginx/sites-available/portfolio"
 else
-  log "nginx config unchanged — skipping reload"
+  NGINX_TARGET="/etc/nginx/conf.d/portfolio.conf"
 fi
+TMP_CONF="$(mktemp)"
+sed "s|http://127.0.0.1:8000|http://127.0.0.1:${HOST_PORT}|g" deploy/nginx-portfolio.conf > "$TMP_CONF"
+if ! $SUDO cmp -s "$TMP_CONF" "$NGINX_TARGET" 2>/dev/null; then
+  $SUDO cp "$TMP_CONF" "$NGINX_TARGET"
+  $SUDO nginx -t && $SUDO systemctl reload nginx
+  log "nginx config updated (backend port ${HOST_PORT}) and reloaded"
+else
+  log "nginx config already up to date — skipping reload"
+fi
+rm -f "$TMP_CONF"
 
 # -----------------------------------------------------------------------------
 $COMPOSE ps
