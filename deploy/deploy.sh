@@ -110,19 +110,20 @@ log "5/7  Installing nginx site config"
 # -----------------------------------------------------------------------------
 # Substitute the backend host port (BACKEND_HOST_PORT in .env, default 8000)
 # into the proxy_pass targets while installing the config.
-HOST_PORT="$(grep -E '^BACKEND_HOST_PORT=' .env | cut -d= -f2 || true)"
+HOST_PORT="$(grep -E '^BACKEND_HOST_PORT=' .env | head -n1 | cut -d= -f2 | tr -d '\r' | xargs || true)"
 HOST_PORT="${HOST_PORT:-8000}"
 sed "s|http://127.0.0.1:8000|http://127.0.0.1:${HOST_PORT}|g" deploy/nginx-portfolio.conf \
   | $SUDO tee "$NGINX_CONF_DIR/portfolio" >/dev/null
 $NGINX_ENABLE
-$SUDO nginx -t
+# NOTE: no `nginx -t` yet — the config references the TLS certificate, which is
+# issued in the next step. Validation happens there, right before nginx starts.
 
 # -----------------------------------------------------------------------------
 log "6/7  TLS certificate"
 # -----------------------------------------------------------------------------
 if [ -d "/etc/letsencrypt/live/$DOMAIN" ]; then
   log "Certificate already exists — skipping issuance"
-  $SUDO systemctl start nginx 2>/dev/null || $SUDO systemctl reload nginx
+  $SUDO nginx -t && { $SUDO systemctl start nginx 2>/dev/null || $SUDO systemctl reload nginx; }
 else
   # nginx must not hold port 80 during standalone issuance
   $SUDO systemctl stop nginx || true
@@ -139,7 +140,7 @@ fi
 log "7/7  Verifying"
 # -----------------------------------------------------------------------------
 $COMPOSE ps
-HOST_PORT="$(grep -E '^BACKEND_HOST_PORT=' .env | cut -d= -f2 || true)"
+HOST_PORT="$(grep -E '^BACKEND_HOST_PORT=' .env | head -n1 | cut -d= -f2 | tr -d '\r' | xargs || true)"
 curl -sf "http://127.0.0.1:${HOST_PORT:-8000}/health" >/dev/null \
   && echo "backend health: OK" || warn "backend health check failed — check: $COMPOSE logs backend"
 curl -sI "https://$DOMAIN" | head -n 1 || warn "HTTPS check failed — DNS/Security Group?"

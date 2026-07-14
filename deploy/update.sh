@@ -70,7 +70,7 @@ log "4/4  Installing nginx config and reloading"
 # -----------------------------------------------------------------------------
 # Always regenerate: the installed config is rendered with BACKEND_HOST_PORT
 # from .env, which may have changed even if the repo file didn't.
-HOST_PORT="$(grep -E '^BACKEND_HOST_PORT=' .env | cut -d= -f2 || true)"
+HOST_PORT="$(grep -E '^BACKEND_HOST_PORT=' .env | head -n1 | cut -d= -f2 | tr -d '\r' | xargs || true)"
 HOST_PORT="${HOST_PORT:-8000}"
 if [ -d /etc/nginx/sites-available ]; then
   NGINX_TARGET="/etc/nginx/sites-available/portfolio"
@@ -90,7 +90,7 @@ rm -f "$TMP_CONF"
 
 # -----------------------------------------------------------------------------
 $COMPOSE ps
-HOST_PORT="$(grep -E '^BACKEND_HOST_PORT=' .env | cut -d= -f2 || true)"
+HOST_PORT="$(grep -E '^BACKEND_HOST_PORT=' .env | head -n1 | cut -d= -f2 | tr -d '\r' | xargs || true)"
 curl -sf "http://127.0.0.1:${HOST_PORT:-8000}/health" >/dev/null \
   && echo "backend health: OK" || warn "backend health check failed — check: $COMPOSE logs backend"
 curl -sI "https://$DOMAIN" | head -n 1 || warn "HTTPS check failed"
