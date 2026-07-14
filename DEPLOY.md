@@ -1,10 +1,16 @@
-# Deploying to AWS EC2 (1 GB) with a domain + automatic HTTPS
+# Deploying to AWS EC2 (8 GB RAM / 1 TB disk) with a domain + HTTPS
 
-Stack: Caddy (TLS) → nginx (SPA + `/api`,`/uploads` proxy) → FastAPI → PostgreSQL.
-Everything runs in Docker. TLS is automatic via Let's Encrypt (Caddy).
+Stack: **nginx (on the host, TLS + static files + `/api`,`/uploads` proxy) → FastAPI (Docker) → PostgreSQL (Docker)**.
+Only `db` and `backend` run in Docker. nginx runs directly on the instance and serves the
+prebuilt frontend from `/var/www/portfolio`. TLS via Let's Encrypt (certbot).
 
-The `web` container is **internal-only** — the site is reachable **only** through Caddy on
-80/443 (no direct `:8080`). `backend` and `db` are also internal (never open 8000/5432).
+The `backend` container is published on **127.0.0.1:8000 only** (configurable via
+`BACKEND_HOST_PORT` if another container on the host already uses that port) — reachable
+by the host nginx, never from the internet. `db` is fully internal.
+
+The instance may run other containers/sites alongside this stack. The nginx config is a
+`server_name` vhost, so it only handles requests for the domain below and coexists with
+other vhosts; just make sure no other container publishes a conflicting host port.
 
 Domain: `aloutesana.ai-web-builder.com`
 
@@ -17,7 +23,8 @@ Inbound rules:
 - TCP 80  — `0.0.0.0/0` (HTTP → redirects to HTTPS; also used for the ACME challenge)
 - TCP 443 — `0.0.0.0/0` (HTTPS)
 
-Do **NOT** open 5432 (Postgres) or 8000 (backend) to the internet — they stay internal.
+Do **NOT** open 5432 (Postgres) or 8000 (backend) to the internet — 8000 is bound to
+localhost anyway, and 5432 is never published.
 
 ## 2. DNS (Spaceship)
 
@@ -55,9 +62,28 @@ sudo apt-get update && sudo apt-get install -y docker-ce docker-ce-cli container
 sudo usermod -aG docker ubuntu     # log out & back in
 ```
 
-## 4. Add swap (important for 1 GB RAM)
+## 4. Install nginx, Node.js and certbot on the host
 
-Building the frontend on a 1 GB instance needs swap to avoid OOM:
+**Amazon Linux 2023**
+```bash
+sudo dnf install -y nginx nodejs20 rsync
+sudo dnf install -y python3-certbot-nginx || sudo pip3 install certbot-nginx
+sudo systemctl enable nginx        # do NOT start yet — certbot needs port 80 for the bootstrap (§6)
+```
+
+**Ubuntu 22.04/24.04**
+```bash
+sudo apt-get install -y nginx certbot python3-certbot-nginx rsync
+# Node 20 via NodeSource (Ubuntu's default nodejs is too old for Vite)
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt-get install -y nodejs
+sudo systemctl enable nginx
+sudo systemctl stop nginx          # apt auto-starts it; certbot needs port 80 for the bootstrap (§6)
+```
+
+## 5. (Optional) Add swap
+
+Not needed on an 8 GB instance, but harmless if you want a safety net:
 ```bash
 sudo fallocate -l 2G /swapfile
 sudo chmod 600 /swapfile
@@ -66,9 +92,16 @@ echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
 free -h
 ```
 
-## 5. Deploy
+## 6. Deploy
 
-> Tip: on a 1 GB instance, prefer building in CI and **pulling** images instead of building here — see **§7 CI/CD with ECR**. The commands below build on the box (fine with the swap from §4).
+> **One-command option:** `bash deploy/deploy.sh` performs sections 3–6 automatically
+> (installs packages, generates `.env` secrets on first run, starts Docker, builds the
+> frontend, installs the nginx config, bootstraps the certificate). Afterwards, updates
+> are a single command: `bash deploy/update.sh`. The manual steps below document exactly
+> what the script does.
+
+With 8 GB RAM you can comfortably build everything on the box. (Building in CI and
+pulling from ECR is still possible — see **§8 CI/CD with ECR**.)
 
 ```bash
 git clone <your-repo-url> portfolio && cd portfolio
@@ -79,10 +112,32 @@ nano .env                       # set POSTGRES_PASSWORD, JWT_SECRET, CORS_ORIGIN
 #   JWT_SECRET:   openssl rand -hex 32
 #   leave ADMIN_PASSWORD_HASH empty for now (set it after the first build)
 
-# Build sequentially to keep memory low on 1 GB, then start
-docker compose -f docker-compose.yml -f docker-compose.prod.yml build backend
-docker compose -f docker-compose.yml -f docker-compose.prod.yml build web
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# 1) Backend + database (Docker)
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+
+# 2) Frontend: build static files and publish them for the host nginx
+cd frontend && npm ci && npm run build && cd ..
+sudo mkdir -p /var/www/portfolio
+sudo rsync -a --delete frontend/dist/ /var/www/portfolio/
+
+# 3) Host nginx site config (complete as shipped: HTTPS block, HTTP→HTTPS
+#    redirect, security headers — no certbot rewriting of the file needed)
+sudo mkdir -p /var/www/portfolio /var/www/letsencrypt
+#    Ubuntu/Debian:
+sudo cp deploy/nginx-portfolio.conf /etc/nginx/sites-available/portfolio
+sudo ln -sf /etc/nginx/sites-available/portfolio /etc/nginx/sites-enabled/portfolio
+sudo rm -f /etc/nginx/sites-enabled/default
+#    Amazon Linux 2023 instead:
+#    sudo cp deploy/nginx-portfolio.conf /etc/nginx/conf.d/portfolio.conf
+
+# 4) TLS certificate — one-time bootstrap. nginx must NOT be running so certbot
+#    can bind port 80 (DNS A record + Security Group 80/443 must already be set):
+sudo systemctl stop nginx
+sudo certbot certonly --standalone -d aloutesana.ai-web-builder.com \
+  --non-interactive --agree-tos -m you@example.com
+sudo nginx -t && sudo systemctl start nginx
+# Switch renewal to webroot so future renewals work while nginx keeps running:
+sudo certbot renew --force-renewal --webroot -w /var/www/letsencrypt
 ```
 
 ### Create the admin password hash (recommended)
@@ -111,30 +166,34 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d backend
 > On macOS, use `sed -i ''` instead of `sed -i`.
 > The result in `.env` looks like: `ADMIN_PASSWORD_HASH=$$2b$$12$$…` (note the doubled `$`).
 
-## 6. Verify
+## 7. Verify
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml ps     # all Up/healthy
-docker compose -f docker-compose.yml -f docker-compose.prod.yml logs -f caddy
+docker compose -f docker-compose.yml -f docker-compose.prod.yml ps     # db + backend Up/healthy
+curl -s http://127.0.0.1:8000/health                                       # backend reachable locally
+sudo nginx -t && systemctl status nginx
 curl -I https://aloutesana.ai-web-builder.com                          # HTTP/2 200
 ```
 
 - Site: `https://aloutesana.ai-web-builder.com`
 - Admin: `https://aloutesana.ai-web-builder.com/admin` (log in with your password)
 
-If Caddy can't get a certificate, it's almost always DNS not yet propagated or port 80 blocked
-in the Security Group — check `docker compose ... logs caddy`.
+If certbot can't get a certificate, it's almost always DNS not yet propagated or port 80
+blocked in the Security Group.
 
-## 7. CI/CD with ECR (recommended for a 1 GB instance)
+Certbot installs a systemd timer that renews the certificate automatically (webroot mode,
+no downtime) — verify with `sudo systemctl list-timers | grep certbot` and
+`sudo certbot renew --dry-run`.
 
-Avoid building on the box entirely: GitHub Actions builds `backend` + `web` and pushes them to
-Amazon ECR; the instance only **pulls**.
+## 8. CI/CD with ECR (optional)
+
+If you'd rather not build the backend on the box, GitHub Actions can build `backend` and
+push it to Amazon ECR; the instance then only **pulls**. The frontend is static files, so
+it needs no image — build it on the host (step 6.2) or in CI and rsync the `dist/` output.
 
 **One-time AWS setup**
 ```bash
-# Create the two ECR repositories
 aws ecr create-repository --repository-name portfolio-backend --region <region>
-aws ecr create-repository --repository-name portfolio-web      --region <region>
 ```
 - Create an IAM role for **GitHub OIDC** with ECR push permissions
   (`ecr:GetAuthorizationToken`, `ecr:BatchCheckLayerAvailability`, `ecr:InitiateLayerUpload`,
@@ -148,7 +207,7 @@ aws ecr create-repository --repository-name portfolio-web      --region <region>
 - Secret: `AWS_ROLE_TO_ASSUME` (the OIDC role ARN)
 
 The workflow (`.github/workflows/build-and-push.yml`) pushes `:latest` and `:<sha>` on every
-push to `main` that touches the app.
+push to `main` that touches the backend.
 
 **On the instance, pull instead of build**
 ```bash
@@ -156,26 +215,36 @@ push to `main` that touches the app.
 aws ecr get-login-password --region <region> | \
   docker login --username AWS --password-stdin <account>.dkr.ecr.<region>.amazonaws.com
 
-# Point compose at the ECR images (add to .env)
-echo 'BACKEND_IMAGE=<account>.dkr.ecr.<region>.amazonaws.com/portfolio-backend:latest'  >> .env
-echo 'FRONTEND_IMAGE=<account>.dkr.ecr.<region>.amazonaws.com/portfolio-web:latest'      >> .env
+# Point compose at the ECR image (add to .env)
+echo 'BACKEND_IMAGE=<account>.dkr.ecr.<region>.amazonaws.com/portfolio-backend:latest' >> .env
 
 # Pull and run (no --build!)
 docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```
 
-## 8. Update / rollback
+## 9. Update / rollback
+
+> **One-command option:** `bash deploy/update.sh` — pulls the code, rebuilds/restarts the
+> backend, rebuilds the frontend only if `frontend/` changed, reloads nginx only if the
+> config changed. The manual equivalent:
 
 ```bash
 git pull
-docker compose -f docker-compose.yml -f docker-compose.prod.yml build backend web
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+# Backend (if changed)
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build backend
+#   — or, in ECR pull mode:  docker compose ... pull && docker compose ... up -d
+
+# Frontend (if changed)
+cd frontend && npm ci && npm run build && cd ..
+sudo rsync -a --delete frontend/dist/ /var/www/portfolio/
+# nginx serves static files directly — no reload needed for content changes
 ```
 
-Rollback: `git checkout <prev-commit>` then re-run the build/up commands.
+Rollback: `git checkout <prev-commit>` then re-run the steps above.
 
-## 9. Backups
+## 10. Backups
 
 Data lives in Docker named volumes `pgdata` and `uploads`. For a portfolio the simplest
 backup is periodic EBS snapshots of the instance volume. To dump the DB manually:
@@ -183,3 +252,11 @@ backup is periodic EBS snapshots of the instance volume. To dump the DB manually
 docker compose -f docker-compose.yml -f docker-compose.prod.yml exec db \
   pg_dump -U portfolio portfolio > backup-$(date +%F).sql
 ```
+
+---
+
+### Legacy note
+
+The previous setup ran everything in Docker (nginx `web` container + Caddy for TLS). The
+`Caddyfile`, `frontend/Dockerfile` and `frontend/nginx.conf` are kept for reference but are
+no longer used by the compose files.
