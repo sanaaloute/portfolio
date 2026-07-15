@@ -4,9 +4,9 @@
 #
 #   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
 #
-#   db:      localhost:5433 -> 5432
-#   backend: localhost:8000 -> 8000 (inherited from base, 127.0.0.1 binding)
-#   web:     localhost:5173 (Vite, proxies /api and /uploads to backend)
+#   db:      portfolio-db      localhost:5433 -> 5432
+#   backend: portfolio-backend localhost:8000 -> 8000
+#   web:     portfolio-web-dev localhost:5173 (Vite, proxies /api + /uploads to backend)
 # =============================================================================
 
 services:
@@ -23,16 +23,20 @@ services:
       - uploads:/app/uploads
     entrypoint: ["./entrypoint.dev.sh"]
     command: []
-    # ports inherited from base: 127.0.0.1:${BACKEND_HOST_PORT:-8000}:8000
+    # Base backend has no published ports (internal only) — expose it for dev.
+    ports:
+      - "8000:8000"
 
   web:
     build:
       context: ./frontend
       dockerfile: Dockerfile.dev
+    image: portfolio-web:dev
+    container_name: portfolio-web-dev
     volumes:
       - ./frontend:/app
       - /app/node_modules
-    ports:
+    ports: !override
       - "5173:5173"
     environment:
       - CHOKIDAR_USEPOLLING=true

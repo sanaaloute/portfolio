@@ -45,4 +45,10 @@ async def main():
 asyncio.run(main())
 PY
 
+# If a command was passed (e.g. `docker compose run backend python -m app.security ...`),
+# run it instead of the server (after migrations/seeding).
+if [ $# -gt 0 ]; then
+  exec "$@"
+fi
+
 exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir /app/app
