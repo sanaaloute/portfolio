@@ -1,0 +1,8 @@
+# Never let local machine state leak into the image build.
+# (A stale node_modules on the build host would overwrite the fresh
+#  `npm ci` result because COPY . . runs after it.)
+node_modules
+dist
+*.log
+.env
+.env.*
